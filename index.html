@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Behavior v1.0 MVP</title>
+    <style>
+        :root {
+            --bg-color: #000000;
+            --text-color: #FFFFFF;
+            --text-dim: #555555;
+            --accent-cash: #E0E0E0;   /* 銀灰 - 實體感 */
+            --accent-mobile: #00E5FF; /* 青藍 - 科技感 */
+            --accent-card: #7C4DFF;   /* 深紫 - 慾望感 */
+            --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --font-mono: "DIN Condensed", "Oswald", "Impact", sans-serif;
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: var(--font-main);
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- Level 1: Input Layer (Top) --- */
+        .display-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 20px;
+            text-align: right;
+        }
+
+        .amount-display {
+            font-size: 80px;
+            font-family: var(--font-mono);
+            letter-spacing: -2px;
+            font-weight: 400;
+            transition: color 0.3s;
+        }
+
+        .currency { font-size: 24px; color: var(--text-dim); margin-right: 5px; }
+        
+        .method-indicator {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-dim);
+            margin-bottom: 10px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        /* --- Level 2: Control Layer (Middle) --- */
+        .control-area {
+            padding: 0 15px 20px;
+        }
+
+        /* Payment Methods */
+        .method-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .method-btn {
+            flex: 1;
+            background: #1C1C1E;
+            border: 1px solid #333;
+            color: #888;
+            padding: 20px 0;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .method-btn.active {
+            color: #000;
+            font-weight: 800;
+            transform: scale(0.98);
+            border: none;
+        }
+        
+        .method-btn[data-type="cash"].active { background: var(--accent-cash); box-shadow: 0 0 15px rgba(224,224,224,0.3); }
+        .method-btn[data-type="mobile"].active { background: var(--accent-mobile); box-shadow: 0 0 15px rgba(0,229,255,0.3); }
+        .method-btn[data-type="card"].active { background: var(--accent-card); color: #FFF; box-shadow: 0 0 15px rgba(124,77,255,0.4); }
+
+        /* Keypad & Categories (Swappable) */
+        .input-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            height: 280px;
+        }
+
+        .key {
+            background: transparent;
+            color: #FFF;
+            font-size: 28px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--font-mono);
+        }
+
+        .key:active { background: #222; border-radius: 50%; }
+
+        .category-grid {
+            display: none; /* Hidden by default */
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            height: 280px;
+        }
+
+        .cat-btn {
+            background: #111;
+            border: 1px solid #222;
+            color: #666;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 12px;
+            gap: 5px;
+        }
+        .cat-btn:active { background: #333; color: #fff; }
+
+        /* --- Level 3: Insight Layer (Bottom) --- */
+        .insight-bar {
+            height: 60px;
+            background: #080808;
+            border-top: 1px solid #111;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            position: relative;
+        }
+
+        .spectrum-container {
+            flex: 1;
+            height: 6px;
+            background: #222;
+            border-radius: 3px;
+            overflow: hidden;
+            display: flex;
+        }
+
+        .spectrum-segment { height: 100%; transition: width 0.5s ease; }
+        .seg-cash { background: var(--accent-cash); width: 33%; }
+        .seg-mobile { background: var(--accent-mobile); width: 33%; }
+        .seg-card { background: var(--accent-card); width: 33%; }
+
+        .insight-text {
+            position: absolute;
+            bottom: 40px;
+            left: 20px;
+            font-size: 10px;
+            color: #444;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* Utility */
+        .hidden { display: none !important; }
+        .show { display: grid !important; }
+        
+        /* Toast Animation */
+        .toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px 40px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            color: #fff;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            text-align: center;
+        }
+        .toast span { display: block; font-size: 12px; color: #888; margin-top: 5px;}
+
+    </style>
+</head>
+<body>
+
+    <div class="display-area">
+        <div class="method-indicator" id="method-label">READY</div>
+        <div class="amount-display">
+            <span class="currency">$</span><span id="amount">0</span>
+        </div>
+    </div>
+
+    <div class="control-area">
+        
+        <div class="method-group">
+            <div class="method-btn" onclick="selectMethod('cash')" data-type="cash">CASH</div>
+            <div class="method-btn" onclick="selectMethod('mobile')" data-type="mobile">MOBILE</div>
+            <div class="method-btn" onclick="selectMethod('card')" data-type="card">CARD</div>
+        </div>
+
+        <div class="input-grid" id="keypad">
+            <button class="key" onclick="appendNum(1)">1</button>
+            <button class="key" onclick="appendNum(2)">2</button>
+            <button class="key" onclick="appendNum(3)">3</button>
+            <button class="key" onclick="appendNum(4)">4</button>
+            <button class="key" onclick="appendNum(5)">5</button>
+            <button class="key" onclick="appendNum(6)">6</button>
+            <button class="key" onclick="appendNum(7)">7</button>
+            <button class="key" onclick="appendNum(8)">8</button>
+            <button class="key" onclick="appendNum(9)">9</button>
+            <button class="key" onclick="clearNum()">C</button>
+            <button class="key" onclick="appendNum(0)">0</button>
+            <button class="key" onclick="deleteNum()">⌫</button>
+        </div>
+
+        <div class="category-grid" id="categories">
+            <div class="cat-btn" onclick="saveTransaction('FOOD')">🍽<br>食</div>
+            <div class="cat-btn" onclick="saveTransaction('CLOTH')">👕<br>衣</div>
+            <div class="cat-btn" onclick="saveTransaction('LIVE')">🏠<br>住</div>
+            <div class="cat-btn" onclick="saveTransaction('MOVE')">🚗<br>行</div>
+            <div class="cat-btn" onclick="saveTransaction('EDU')">📚<br>育</div>
+            <div class="cat-btn" onclick="saveTransaction('FUN')">🎮<br>樂</div>
+            <div class="cat-btn" onclick="saveTransaction('SOCIAL')">🍷<br>交際</div>
+            <div class="cat-btn" onclick="saveTransaction('OTHER')">📦<br>其他</div>
+        </div>
+    </div>
+
+    <div class="insight-text">PAYMENT BEHAVIOR SPECTRUM</div>
+    <div class="insight-bar">
+        <div class="spectrum-container">
+            <div class="spectrum-segment seg-cash" id="bar-cash" style="width: 10%"></div>
+            <div class="spectrum-segment seg-mobile" id="bar-mobile" style="width: 10%"></div>
+            <div class="spectrum-segment seg-card" id="bar-card" style="width: 80%"></div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">
+        SAVED
+        <span id="toast-detail">CASH - $100</span>
+    </div>
+
+    <script>
+        // State
+        let currentAmount = '0';
+        let selectedMethod = null;
+        let stats = {
+            cash: 2000,
+            mobile: 5000,
+            card: 15000 // Fake initial data to show "Card dominance"
+        };
+
+        // DOM Elements
+        const elAmount = document.getElementById('amount');
+        const elMethodLabel = document.getElementById('method-label');
+        const elKeypad = document.getElementById('keypad');
+        const elCategories = document.getElementById('categories');
+        const methodBtns = document.querySelectorAll('.method-btn');
+
+        // Initial Render
+        updateSpectrum();
+
+        // Keypad Logic
+        function appendNum(num) {
+            if (currentAmount === '0') currentAmount = '';
+            if (currentAmount.length < 7) {
+                currentAmount += num;
+                updateDisplay();
+                checkReadyState();
+            }
+        }
+
+        function deleteNum() {
+            currentAmount = currentAmount.slice(0, -1);
+            if (currentAmount === '') currentAmount = '0';
+            updateDisplay();
+            checkReadyState();
+        }
+
+        function clearNum() {
+            currentAmount = '0';
+            selectedMethod = null;
+            resetUI();
+            updateDisplay();
+        }
+
+        function updateDisplay() {
+            elAmount.innerText = parseInt(currentAmount).toLocaleString();
+            elAmount.style.color = selectedMethod ? getMethodColor(selectedMethod) : '#FFF';
+        }
+
+        // Method Selection
+        function selectMethod(type) {
+            selectedMethod = type;
+            
+            // Visual Update
+            methodBtns.forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.method-btn[data-type="${type}"]`).classList.add('active');
+            
+            // Text Update
+            elMethodLabel.style.opacity = '1';
+            elMethodLabel.innerText = `${type.toUpperCase()} PAYMENT`;
+            elAmount.style.color = getMethodColor(type);
+
+            checkReadyState();
+        }
+
+        function getMethodColor(type) {
+            if(type === 'cash') return '#E0E0E0';
+            if(type === 'mobile') return '#00E5FF';
+            if(type === 'card') return '#7C4DFF';
+            return '#FFF';
+        }
+
+        // State Check: Ready to choose category?
+        function checkReadyState() {
+            if (currentAmount !== '0' && selectedMethod) {
+                // Switch Keypad to Categories
+                elKeypad.classList.remove('show');
+                elKeypad.classList.add('hidden');
+                elCategories.classList.remove('hidden');
+                elCategories.classList.add('show');
+            } else {
+                elKeypad.classList.remove('hidden');
+                elKeypad.classList.add('show');
+                elCategories.classList.remove('show');
+                elCategories.classList.add('hidden');
+            }
+        }
+
+        // Save & Feedback
+        function saveTransaction(category) {
+            const val = parseInt(currentAmount);
+            
+            // Update Fake Stats
+            stats[selectedMethod] += val;
+            updateSpectrum();
+
+            // Feedback Animation
+            showToast(selectedMethod, val);
+
+            // Reset
+            setTimeout(() => {
+                clearNum();
+            }, 500);
+        }
+
+        function resetUI() {
+            methodBtns.forEach(btn => btn.classList.remove('active'));
+            elMethodLabel.style.opacity = '0';
+            elKeypad.classList.remove('hidden');
+            elKeypad.classList.add('show');
+            elCategories.classList.remove('show');
+            elCategories.classList.add('hidden');
+        }
+
+        function updateSpectrum() {
+            const total = stats.cash + stats.mobile + stats.card;
+            const pCash = (stats.cash / total) * 100;
+            const pMobile = (stats.mobile / total) * 100;
+            const pCard = (stats.card / total) * 100;
+
+            document.getElementById('bar-cash').style.width = `${pCash}%`;
+            document.getElementById('bar-mobile').style.width = `${pMobile}%`;
+            document.getElementById('bar-card').style.width = `${pCard}%`;
+        }
+
+        function showToast(method, amount) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-detail').innerText = `${method.toUpperCase()} - $${amount.toLocaleString()}`;
+            toast.style.borderColor = getMethodColor(method);
+            toast.style.opacity = '1';
+            setTimeout(() => toast.style.opacity = '0', 1500);
+        }
+
+    </script>
+</body>
+</html>
