@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>CashFlow Sense</title>
+    <title>CashFlow Sense v2.0</title>
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#F5F5F4"> <!-- Stone-100 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <!-- 修正 Icon 路徑 -->
     <link rel="apple-touch-icon" href="./icons/icon-192.png">
 
     <!-- 資源載入 -->
@@ -72,7 +71,7 @@
             background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.5);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.5);
         }
     </style>
 </head>
@@ -99,91 +98,72 @@
 
         // --- Config ---
         const METHODS = {
-            cash: { id: 'cash', label: '現金', color: 'text-stone-600', bg: 'bg-stone-100', border: 'border-stone-200', icon: 'fa-coins' },
-            mobile: { id: 'mobile', label: '行動', color: 'text-slate-600', bg: 'bg-slate-100', border: 'border-slate-200', icon: 'fa-mobile-screen' },
-            card: { id: 'card', label: '信用卡', color: 'text-rose-700', bg: 'bg-rose-50', border: 'border-rose-100', icon: 'fa-credit-card' },
-            bank: { id: 'bank', label: '轉帳', color: 'text-gray-600', bg: 'bg-gray-100', border: 'border-gray-200', icon: 'fa-building-columns' }
+            cash: { id: 'cash', label: '現金', color: 'text-stone-600', bg: 'bg-stone-100', bar: 'bg-stone-500', icon: 'fa-coins' },
+            mobile: { id: 'mobile', label: '行動', color: 'text-slate-600', bg: 'bg-slate-100', bar: 'bg-slate-500', icon: 'fa-mobile-screen' },
+            card: { id: 'card', label: '信用卡', color: 'text-rose-700', bg: 'bg-rose-50', bar: 'bg-rose-600', icon: 'fa-credit-card' },
+            bank: { id: 'bank', label: '轉帳', color: 'text-gray-600', bg: 'bg-gray-100', bar: 'bg-gray-500', icon: 'fa-building-columns' }
         };
 
         // --- Components ---
 
-        // 1. Home Lobby (The Ritual Entry)
+        // 1. Home Lobby (v2.0 Logo Fix)
         const HomeLobby = ({ onNavigate }) => {
             return (
                 <div className="h-full flex flex-col p-6 animate-fade-in relative">
-                    {/* Header: Logo & Version */}
+                    {/* Header: Logo Image & Version */}
                     <div className="safe-top pt-8 pb-6 flex flex-col items-center justify-center">
-                        <div className="w-14 h-14 bg-white rounded-2xl shadow-soft flex items-center justify-center text-base-800 mb-3 border border-base-200">
-                            <i className="fa-solid fa-layer-group text-2xl text-stone-600"></i>
+                        <div className="w-20 h-20 bg-white rounded-3xl shadow-soft flex items-center justify-center mb-4 border border-base-200 overflow-hidden">
+                            {/* v2.0 Update: Real Image Logo */}
+                            <img src="./icons/icon-192.png" alt="Logo" className="w-full h-full object-cover" />
                         </div>
                         <h1 className="text-lg font-bold text-base-800 tracking-wider">CASH FLOW SENSE</h1>
-                        <span className="text-[10px] text-base-400 font-bold tracking-widest mt-1 opacity-60">v1.2 PERSONAL</span>
+                        <span className="text-[10px] text-base-400 font-bold tracking-widest mt-1 opacity-60">v2.0 PERSONAL</span>
                     </div>
 
                     {/* The Matrix: 4 Ritual Cards */}
                     <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-4 pb-12">
-                        
-                        {/* 1. Journal (日常) */}
-                        <button onClick={() => onNavigate('journal')} className="group relative bg-white rounded-3xl shadow-card p-5 flex flex-col justify-between items-start transition-all active:scale-[0.98] border border-base-100 overflow-hidden">
-                            <div className="absolute right-0 top-0 w-24 h-24 bg-gradient-to-br from-stone-100 to-transparent rounded-full -mr-8 -mt-8 opacity-50 group-hover:scale-110 transition-transform"></div>
-                            <div className="w-10 h-10 rounded-full bg-stone-50 flex items-center justify-center text-stone-600 z-10">
-                                <i className="fa-solid fa-pen-nib"></i>
-                            </div>
-                            <div className="z-10">
-                                <div className="text-xs text-base-400 font-bold uppercase tracking-wider mb-1">Entry</div>
-                                <div className="text-lg font-bold text-base-800">日常</div>
-                            </div>
-                        </button>
-
-                        {/* 2. Insight (透視) */}
-                        <button onClick={() => onNavigate('insight')} className="group relative bg-white rounded-3xl shadow-card p-5 flex flex-col justify-between items-start transition-all active:scale-[0.98] border border-base-100 overflow-hidden">
-                            <div className="absolute right-0 top-0 w-24 h-24 bg-gradient-to-br from-sky-50 to-transparent rounded-full -mr-8 -mt-8 opacity-50 group-hover:scale-110 transition-transform"></div>
-                            <div className="w-10 h-10 rounded-full bg-sky-50 flex items-center justify-center text-sky-600 z-10">
-                                <i className="fa-solid fa-chart-pie"></i>
-                            </div>
-                            <div className="z-10">
-                                <div className="text-xs text-base-400 font-bold uppercase tracking-wider mb-1">Analyze</div>
-                                <div className="text-lg font-bold text-base-800">透視</div>
-                            </div>
-                        </button>
-
-                        {/* 3. Calendar (回溯) */}
-                        <button onClick={() => onNavigate('calendar')} className="group relative bg-white rounded-3xl shadow-card p-5 flex flex-col justify-between items-start transition-all active:scale-[0.98] border border-base-100 overflow-hidden">
-                            <div className="absolute right-0 top-0 w-24 h-24 bg-gradient-to-br from-emerald-50 to-transparent rounded-full -mr-8 -mt-8 opacity-50 group-hover:scale-110 transition-transform"></div>
-                            <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 z-10">
-                                <i className="fa-regular fa-calendar"></i>
-                            </div>
-                            <div className="z-10">
-                                <div className="text-xs text-base-400 font-bold uppercase tracking-wider mb-1">Trace</div>
-                                <div className="text-lg font-bold text-base-800">回溯</div>
-                            </div>
-                        </button>
-
-                        {/* 4. Vault (金庫) */}
-                        <button onClick={() => onNavigate('vault')} className="group relative bg-white rounded-3xl shadow-card p-5 flex flex-col justify-between items-start transition-all active:scale-[0.98] border border-base-100 overflow-hidden">
-                            <div className="absolute right-0 top-0 w-24 h-24 bg-gradient-to-br from-rose-50 to-transparent rounded-full -mr-8 -mt-8 opacity-50 group-hover:scale-110 transition-transform"></div>
-                            <div className="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center text-rose-600 z-10">
-                                <i className="fa-solid fa-vault"></i>
-                            </div>
-                            <div className="z-10 w-full">
-                                <div className="text-xs text-base-400 font-bold uppercase tracking-wider mb-1">Asset</div>
-                                <div className="flex justify-between items-end w-full">
-                                    <div className="text-lg font-bold text-base-800">金庫</div>
-                                    <i className="fa-solid fa-lock text-xs text-base-300 mb-1"></i>
-                                </div>
-                            </div>
-                        </button>
-
+                        <LobbyCard id="journal" title="日常" sub="Entry" icon="fa-pen-nib" theme="stone" onClick={()=>onNavigate('journal')} />
+                        <LobbyCard id="insight" title="透視" sub="Analyze" icon="fa-chart-pie" theme="sky" onClick={()=>onNavigate('insight')} />
+                        {/* v2.0 Update: Name Changed to 紀錄 (Record) */}
+                        <LobbyCard id="calendar" title="紀錄" sub="Record" icon="fa-regular fa-calendar" theme="emerald" onClick={()=>onNavigate('calendar')} />
+                        <LobbyCard id="vault" title="金庫" sub="Asset" icon="fa-solid fa-vault" theme="rose" onClick={()=>onNavigate('vault')} isVault />
                     </div>
                 </div>
             );
         };
 
-        // 2. Page Container (Handles Header & Back)
-        const PageContainer = ({ title, onBack, children, extraIcon, onExtraClick }) => (
+        const LobbyCard = ({ id, title, sub, icon, theme, onClick, isVault }) => {
+            const colors = {
+                stone: 'from-stone-100 text-stone-600 bg-stone-50',
+                sky: 'from-sky-50 text-sky-600 bg-sky-50',
+                emerald: 'from-emerald-50 text-emerald-600 bg-emerald-50',
+                rose: 'from-rose-50 text-rose-600 bg-rose-50'
+            };
+            return (
+                <button onClick={onClick} className="group relative bg-white rounded-3xl shadow-card p-5 flex flex-col justify-between items-start transition-all active:scale-[0.98] border border-base-100 overflow-hidden">
+                    <div className={`absolute right-0 top-0 w-24 h-24 bg-gradient-to-br ${colors[theme].split(' ')[0]} to-transparent rounded-full -mr-8 -mt-8 opacity-50 group-hover:scale-110 transition-transform`}></div>
+                    <div className={`w-10 h-10 rounded-full ${colors[theme].split(' ')[2]} flex items-center justify-center ${colors[theme].split(' ')[1]} z-10`}>
+                        <i className={`fa-solid ${icon}`}></i>
+                    </div>
+                    <div className="z-10 w-full text-left">
+                        <div className="text-xs text-base-400 font-bold uppercase tracking-wider mb-1">{sub}</div>
+                        {isVault ? (
+                            <div className="flex justify-between items-end w-full">
+                                <div className="text-lg font-bold text-base-800">{title}</div>
+                                <i className="fa-solid fa-lock text-xs text-base-300 mb-1"></i>
+                            </div>
+                        ) : (
+                            <div className="text-lg font-bold text-base-800">{title}</div>
+                        )}
+                    </div>
+                </button>
+            )
+        };
+
+        // 2. Page Container
+        const PageContainer = ({ title, onBack, children, extraIcon, onExtraClick, noScroll }) => (
             <div className="h-full flex flex-col bg-base-50 animate-zoom-in">
-                {/* Glass Header */}
-                <div className="safe-top glass-panel sticky top-0 z-40">
+                <div className="safe-top glass-panel sticky top-0 z-40 flex-none">
                     <div className="h-[60px] flex items-center justify-between px-4">
                         <button onClick={onBack} className="w-10 h-10 rounded-full bg-white/50 flex items-center justify-center text-base-800 active:bg-base-200 transition-colors">
                             <i className="fa-solid fa-arrow-left"></i>
@@ -198,14 +178,13 @@
                         </div>
                     </div>
                 </div>
-                {/* Content */}
-                <div className="flex-1 overflow-y-auto no-scrollbar relative">
+                <div className={`flex-1 relative ${noScroll ? 'overflow-hidden flex flex-col' : 'overflow-y-auto no-scrollbar'}`}>
                     {children}
                 </div>
             </div>
         );
 
-        // 3. Journal Page (日常) - List & Add
+        // 3. Journal Page
         const JournalPage = ({ transactions, onBack, onOpenAdd, onDelete }) => (
             <PageContainer title="日常 Journal" onBack={onBack}>
                 <div className="px-5 pt-4 pb-24">
@@ -219,7 +198,6 @@
                         transactions.slice(0, 20).map(t => <TxItem key={t.id} tx={t} onDelete={onDelete} />)
                     )}
                 </div>
-                {/* FAB */}
                 <div className="fixed bottom-8 right-6 safe-bottom z-50 flex flex-col gap-3">
                     <button onClick={() => onOpenAdd('income')} className="w-12 h-12 rounded-full bg-white shadow-lg text-emerald-600 flex items-center justify-center active:scale-90 transition-transform border border-base-100">
                         <i className="fa-solid fa-plus"></i>
@@ -231,15 +209,34 @@
             </PageContainer>
         );
 
-        // 4. Insight Page (透視) - Analysis
+        // 4. Insight Page (v2.0 Dual Dimension)
         const InsightPage = ({ transactions, onBack }) => {
+            const [mode, setMode] = useState('method'); // 'method' | 'category'
             const currentMonth = new Date().getMonth() + 1;
+
             const stats = useMemo(() => {
                 const filtered = transactions.filter(t => t.type === 'expense' && new Date(t.date).getMonth() + 1 === currentMonth);
                 const total = filtered.reduce((a, b) => a + b.amount, 0);
+                
+                // Method Logic
                 const byMethod = { cash: 0, mobile: 0, card: 0 };
-                filtered.forEach(t => { if(byMethod[t.method] !== undefined) byMethod[t.method] += t.amount });
-                return { total, byMethod };
+                
+                // Category Logic
+                const byCat = {};
+
+                filtered.forEach(t => { 
+                    // Method
+                    if(byMethod[t.method] !== undefined) byMethod[t.method] += t.amount;
+                    // Category
+                    byCat[t.category] = (byCat[t.category] || 0) + t.amount;
+                });
+
+                // Convert Cat map to sorted array
+                const sortedCats = Object.entries(byCat)
+                    .map(([k, v]) => ({ label: k, amount: v, pct: total===0?0:Math.round(v/total*100) }))
+                    .sort((a,b) => b.amount - a.amount);
+
+                return { total, byMethod, sortedCats };
             }, [transactions]);
             
             const getPct = (val) => stats.total === 0 ? 0 : Math.round((val / stats.total) * 100);
@@ -247,21 +244,40 @@
             return (
                 <PageContainer title="透視 Insight" onBack={onBack}>
                     <div className="px-6 pt-6 pb-10">
-                        <div className="mb-8">
+                        {/* Summary Header */}
+                        <div className="mb-6">
                             <div className="text-3xl font-bold text-base-800 font-num">${formatMoney(stats.total)}</div>
                             <div className="text-xs font-bold text-base-400 mt-1">{currentMonth}月總支出</div>
                         </div>
-                        <div className="space-y-4">
-                            <MethodBar label="現金" icon="fa-coins" color="text-stone-600" bg="bg-stone-500" amount={stats.byMethod.cash} pct={getPct(stats.byMethod.cash)} />
-                            <MethodBar label="行動" icon="fa-mobile-screen" color="text-slate-600" bg="bg-slate-500" amount={stats.byMethod.mobile} pct={getPct(stats.byMethod.mobile)} />
-                            <MethodBar label="信用卡" icon="fa-credit-card" color="text-rose-700" bg="bg-rose-600" amount={stats.byMethod.card} pct={getPct(stats.byMethod.card)} />
+
+                        {/* v2.0 Dimension Switcher */}
+                        <div className="flex justify-center mb-8">
+                            <div className="bg-base-200 p-1 rounded-full flex gap-1">
+                                <button onClick={() => setMode('method')} className={`px-5 py-2 rounded-full text-xs font-bold transition-all ${mode==='method'?'bg-white text-base-800 shadow-sm':'text-base-500'}`}>支付方式</button>
+                                <button onClick={() => setMode('category')} className={`px-5 py-2 rounded-full text-xs font-bold transition-all ${mode==='category'?'bg-white text-base-800 shadow-sm':'text-base-500'}`}>消費類別</button>
+                            </div>
+                        </div>
+
+                        {/* Dynamic Content */}
+                        <div className="space-y-4 animate-fade-in">
+                            {mode === 'method' ? (
+                                <>
+                                    <MethodBar label="現金" icon="fa-coins" color={METHODS.cash.color} bar={METHODS.cash.bar} amount={stats.byMethod.cash} pct={getPct(stats.byMethod.cash)} />
+                                    <MethodBar label="行動" icon="fa-mobile-screen" color={METHODS.mobile.color} bar={METHODS.mobile.bar} amount={stats.byMethod.mobile} pct={getPct(stats.byMethod.mobile)} />
+                                    <MethodBar label="信用卡" icon="fa-credit-card" color={METHODS.card.color} bar={METHODS.card.bar} amount={stats.byMethod.card} pct={getPct(stats.byMethod.card)} />
+                                </>
+                            ) : (
+                                stats.sortedCats.map((c, i) => (
+                                    <CategoryBar key={i} label={c.label} amount={c.amount} pct={c.pct} />
+                                ))
+                            )}
                         </div>
                     </div>
                 </PageContainer>
             );
         };
 
-        const MethodBar = ({ label, icon, color, bg, amount, pct }) => (
+        const MethodBar = ({ label, icon, color, bar, amount, pct }) => (
             <div className="bg-white p-4 rounded-2xl shadow-sm border border-base-100">
                 <div className="flex justify-between items-center mb-2">
                     <div className="flex items-center gap-2">
@@ -271,13 +287,29 @@
                     <span className="text-sm font-bold font-num text-base-800">${formatMoney(amount)}</span>
                 </div>
                 <div className="w-full h-2 bg-base-100 rounded-full overflow-hidden">
-                    <div style={{width: `${pct}%`}} className={`h-full ${bg} transition-all duration-500`}></div>
+                    <div style={{width: `${pct}%`}} className={`h-full ${bar} transition-all duration-500`}></div>
                 </div>
                 <div className="text-right mt-1 text-[10px] font-bold text-base-400">{pct}%</div>
             </div>
         );
 
-        // 5. Calendar Page (回溯)
+        // v2.0 New Category Bar Component
+        const CategoryBar = ({ label, amount, pct }) => (
+            <div className="bg-white px-4 py-3 rounded-xl border border-base-100 flex items-center gap-3">
+                <div className="w-12 text-xs font-bold text-base-600 truncate">{label}</div>
+                <div className="flex-1">
+                    <div className="flex justify-between text-[10px] text-base-400 mb-1">
+                        <span className="font-bold text-base-800">${formatMoney(amount)}</span>
+                        <span>{pct}%</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-base-100 rounded-full overflow-hidden">
+                        <div style={{width: `${pct}%`}} className="h-full bg-base-800 rounded-full"></div>
+                    </div>
+                </div>
+            </div>
+        );
+
+        // 5. Calendar Page (v2.0 Locked Header + Scrollable List)
         const CalendarPage = ({ transactions, onBack }) => {
             const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
             const [selectedDate, setSelectedDate] = useState(getToday());
@@ -286,41 +318,44 @@
             const hasTx = (d) => transactions.some(t => t.date === d);
 
             return (
-                <PageContainer title="回溯 Calendar" onBack={onBack}>
-                    <div className="px-4 py-4">
+                <PageContainer title="紀錄 Record" onBack={onBack} noScroll={true}>
+                    {/* Fixed Top Section: Calendar Grid */}
+                    <div className="flex-none bg-base-50 px-4 py-4 border-b border-base-200 z-10 shadow-sm">
                         {/* Month Nav */}
-                        <div className="flex justify-between items-center mb-6 px-2">
+                        <div className="flex justify-between items-center mb-4 px-2">
                             <button onClick={() => setCurrentMonth(m => m===1?12:m-1)}><i className="fa-solid fa-chevron-left text-base-400"></i></button>
                             <span className="text-lg font-bold text-base-800">{currentMonth}月</span>
                             <button onClick={() => setCurrentMonth(m => m===12?1:m+1)}><i className="fa-solid fa-chevron-right text-base-400"></i></button>
                         </div>
                         {/* Grid */}
-                        <div className="grid grid-cols-7 gap-1 mb-8">
-                            {['日','一','二','三','四','五','六'].map(d => <div key={d} className="text-center text-[10px] text-base-400 font-bold mb-2">{d}</div>)}
+                        <div className="grid grid-cols-7 gap-1">
+                            {['日','一','二','三','四','五','六'].map(d => <div key={d} className="text-center text-[10px] text-base-400 font-bold mb-1">{d}</div>)}
                             {days.map((d, i) => {
                                 if(!d) return <div key={i}></div>;
                                 const isSel = d.dateStr === selectedDate;
                                 const active = hasTx(d.dateStr);
                                 return (
                                     <div key={i} onClick={() => setSelectedDate(d.dateStr)} 
-                                        className={`aspect-square rounded-xl flex flex-col items-center justify-center text-xs font-bold transition-all cursor-pointer ${isSel ? 'bg-base-800 text-white shadow-lg' : 'bg-white text-base-600 hover:bg-base-100'}`}>
+                                        className={`aspect-square rounded-lg flex flex-col items-center justify-center text-xs font-bold transition-all cursor-pointer ${isSel ? 'bg-base-800 text-white shadow-lg' : 'bg-transparent text-base-600 hover:bg-base-200'}`}>
                                         {d.day}
-                                        {active && !isSel && <div className="w-1 h-1 rounded-full bg-rose-400 mt-1"></div>}
+                                        {active && !isSel && <div className="w-1 h-1 rounded-full bg-rose-400 mt-0.5"></div>}
                                     </div>
                                 )
                             })}
                         </div>
-                        {/* Daily List */}
-                        <div className="bg-white rounded-2xl p-4 shadow-sm border border-base-100 min-h-[200px]">
-                            <div className="text-xs font-bold text-base-400 mb-4">{selectedDate}</div>
-                            {dailyTx.length === 0 ? <div className="text-center text-xs text-base-300 py-8">無紀錄</div> : dailyTx.map(t => <TxItem key={t.id} tx={t} />)}
-                        </div>
+                    </div>
+
+                    {/* Scrollable Bottom Section: List */}
+                    <div className="flex-1 overflow-y-auto no-scrollbar p-4 bg-white/50">
+                        <div className="text-xs font-bold text-base-400 mb-3 sticky top-0 bg-white/50 backdrop-blur py-2">{selectedDate} 流水帳</div>
+                        {dailyTx.length === 0 ? <div className="text-center text-xs text-base-300 py-8">本日無紀錄</div> : dailyTx.map(t => <TxItem key={t.id} tx={t} />)}
+                        <div className="h-10"></div> {/* Bottom Spacer */}
                     </div>
                 </PageContainer>
             );
         };
 
-        // 6. Vault Page (金庫)
+        // 6. Vault Page
         const VaultPage = ({ transactions, onBack }) => {
             const [visible, setVisible] = useState(false);
             const net = useMemo(() => transactions.reduce((a, b) => b.type === 'income' ? a + b.amount : a - b.amount, 0), [transactions]);
@@ -346,7 +381,7 @@
             const m = METHODS[tx.method] || METHODS.cash;
             const isExp = tx.type === 'expense';
             return (
-                <div className="flex justify-between items-center py-3 border-b border-base-100 last:border-0">
+                <div className="flex justify-between items-center py-3 border-b border-base-100 last:border-0 animate-fade-in">
                     <div className="flex items-center gap-3">
                         <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm ${isExp ? m.bg + ' ' + m.color : 'bg-emerald-50 text-emerald-600'}`}>
                             <i className={`fa-solid ${isExp ? m.icon : 'fa-arrow-down'}`}></i>
@@ -403,7 +438,7 @@
                                 <div className="text-xs font-bold text-base-300 uppercase tracking-widest text-center mb-3">Payment</div>
                                 <div className="flex justify-center gap-3">
                                     {['cash','mobile','card'].map(k => (
-                                        <button key={k} onClick={() => setMethod(k)} className={`w-16 h-16 rounded-2xl flex flex-col items-center justify-center gap-1 border-2 transition-all ${method===k ? METHODS[k].border+' '+METHODS[k].bg+' '+METHODS[k].color : 'border-base-100 text-base-300'}`}>
+                                        <button key={k} onClick={() => setMethod(k)} className={`w-16 h-16 rounded-2xl flex flex-col items-center justify-center gap-1 border-2 transition-all ${method===k ? 'border-base-800 bg-base-50 text-base-800' : 'border-base-100 text-base-300'}`}>
                                             <i className={`fa-solid ${METHODS[k].icon} text-lg`}></i>
                                             <span className="text-[10px] font-bold">{METHODS[k].label}</span>
                                         </button>
@@ -429,7 +464,7 @@
 
         // --- App Root ---
         const App = () => {
-            const [page, setPage] = useState('home'); // home, journal, insight, calendar, vault
+            const [page, setPage] = useState('home'); 
             const [txs, setTxs] = useState([]);
             const [addMode, setAddMode] = useState(null);
 
@@ -453,12 +488,9 @@
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
 
-        // SW 註冊邏輯
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./service-worker.js')
-                    .then(registration => console.log('SW registered:', registration.scope))
-                    .catch(error => console.log('SW failed:', error));
+                navigator.serviceWorker.register('./service-worker.js');
             });
         }
     </script>
