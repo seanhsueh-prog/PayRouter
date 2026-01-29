@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cfs-cache-v2.0'; // 升級 v2.0
+const CACHE_NAME = 'cfs-cache-v3.0'; // 升級 v3.0
 
 const ASSETS_TO_CACHE = [
   './index.html',         // 唯一入口
@@ -28,7 +28,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => Promise.all(
       keys.map((key) => {
-        // 只要不是 v2.0 的快取，全部刪除
+        // 只要不是 v3.0 的快取，全部刪除
         if (key !== CACHE_NAME) {
           return caches.delete(key);
         }

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>CashFlow Sense v2.0</title>
+    <title>CashFlow Sense v3.0</title>
     
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#F5F5F4"> <!-- Stone-100 -->
@@ -24,32 +24,25 @@
             theme: {
                 extend: {
                     colors: {
-                        // 基底：暖石灰
                         base: { 50: '#FAFAF9', 100: '#F5F5F4', 200: '#E7E5E4', 300: '#D6D3D1', 800: '#44403C', 900: '#292524' },
-                        // 入口主題色
                         journal: { 100: '#E8E8E8', 500: '#737373' }, 
                         insight: { 100: '#E0F2FE', 500: '#7DD3FC', 800: '#075985' }, 
                         calendar: { 100: '#F0FDF4', 500: '#86EFAC', 800: '#166534' }, 
                         vault: { 100: '#FFF1F2', 500: '#FDA4AF', 800: '#9F1239' }, 
-                        // 支付方式
-                        cash: '#78716C', // Stone
-                        mobile: '#64748B', // Slate Blue
-                        card: '#9F1239', // Rose Red
                     },
                     boxShadow: {
                         'soft': '0 4px 20px -2px rgba(68, 64, 60, 0.05)',
                         'card': '0 10px 15px -3px rgba(68, 64, 60, 0.05), 0 4px 6px -2px rgba(68, 64, 60, 0.02)',
-                        'inner-light': 'inset 0 2px 4px 0 rgba(255, 255, 255, 0.3)',
+                        'float': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
                     },
                     animation: {
                         'fade-in': 'fadeIn 0.4s ease-out',
                         'slide-up': 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-                        'zoom-in': 'zoomIn 0.2s ease-out',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
                     },
                     keyframes: {
                         fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
-                        slideUp: { '0%': { transform: 'translateY(100%)' }, '100%': { transform: 'translateY(0)' } },
-                        zoomIn: { '0%': { transform: 'scale(0.95)', opacity: '0' }, '100%': { transform: 'scale(1)', opacity: '1' } }
+                        slideUp: { '0%': { transform: 'translateY(100%)' }, '100%': { transform: 'translateY(0)' } }
                     },
                     fontFamily: {
                         'sans': ['-apple-system', 'BlinkMacSystemFont', "Segoe UI", 'Roboto', 'sans-serif'],
@@ -68,9 +61,9 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         
         .glass-panel {
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.5);
         }
     </style>
@@ -79,8 +72,9 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+        const { useState, useEffect, useMemo, useRef } = React;
         const DB_KEY = 'cfs_db_v1';
+        const NOTE_KEY = 'cfs_notes_v1';
 
         // --- Utils ---
         const getToday = () => new Date().toISOString().split('T')[0];
@@ -96,37 +90,45 @@
             return days;
         };
 
-        // --- Config ---
+        // --- Config (Pain Philosophy) ---
         const METHODS = {
-            cash: { id: 'cash', label: '現金', color: 'text-stone-600', bg: 'bg-stone-100', bar: 'bg-stone-500', icon: 'fa-coins' },
-            mobile: { id: 'mobile', label: '行動', color: 'text-slate-600', bg: 'bg-slate-100', bar: 'bg-slate-500', icon: 'fa-mobile-screen' },
-            card: { id: 'card', label: '信用卡', color: 'text-rose-700', bg: 'bg-rose-50', bar: 'bg-rose-600', icon: 'fa-credit-card' },
-            bank: { id: 'bank', label: '轉帳', color: 'text-gray-600', bg: 'bg-gray-100', bar: 'bg-gray-500', icon: 'fa-building-columns' }
+            cash: { id: 'cash', label: '現金', painType: 'solid', color: 'text-stone-700', bg: 'bg-stone-200', bar: 'bg-stone-600', icon: 'fa-coins' },
+            mobile: { id: 'mobile', label: '行動', painType: 'ghost', color: 'text-slate-500', bg: 'bg-slate-100', bar: 'bg-gradient-to-r from-slate-400 to-slate-200', icon: 'fa-mobile-screen' },
+            card: { id: 'card', label: '信用卡', painType: 'ghost', color: 'text-rose-500', bg: 'bg-rose-50', bar: 'bg-gradient-to-r from-rose-400 to-rose-200', icon: 'fa-credit-card' },
+            bank: { id: 'bank', label: '轉帳', painType: 'solid', color: 'text-gray-600', bg: 'bg-gray-100', bar: 'bg-gray-500', icon: 'fa-building-columns' }
         };
 
         // --- Components ---
 
-        // 1. Home Lobby (v2.0 Logo Fix)
-        const HomeLobby = ({ onNavigate }) => {
+        // 1. Home Lobby (v3.0 Murmur Capsule)
+        const HomeLobby = ({ onNavigate, onOpenMurmur }) => {
             return (
                 <div className="h-full flex flex-col p-6 animate-fade-in relative">
-                    {/* Header: Logo Image & Version */}
+                    {/* Header */}
                     <div className="safe-top pt-8 pb-6 flex flex-col items-center justify-center">
                         <div className="w-20 h-20 bg-white rounded-3xl shadow-soft flex items-center justify-center mb-4 border border-base-200 overflow-hidden">
-                            {/* v2.0 Update: Real Image Logo */}
                             <img src="./icons/icon-192.png" alt="Logo" className="w-full h-full object-cover" />
                         </div>
                         <h1 className="text-lg font-bold text-base-800 tracking-wider">CASH FLOW SENSE</h1>
-                        <span className="text-[10px] text-base-400 font-bold tracking-widest mt-1 opacity-60">v2.0 PERSONAL</span>
+                        <span className="text-[10px] text-base-400 font-bold tracking-widest mt-1 opacity-60">v3.0 PAIN AWARE</span>
                     </div>
 
-                    {/* The Matrix: 4 Ritual Cards */}
-                    <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-4 pb-12">
+                    {/* Matrix */}
+                    <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-4 pb-4">
                         <LobbyCard id="journal" title="日常" sub="Entry" icon="fa-pen-nib" theme="stone" onClick={()=>onNavigate('journal')} />
-                        <LobbyCard id="insight" title="透視" sub="Analyze" icon="fa-chart-pie" theme="sky" onClick={()=>onNavigate('insight')} />
-                        {/* v2.0 Update: Name Changed to 紀錄 (Record) */}
+                        <LobbyCard id="insight" title="透視" sub="Insight" icon="fa-chart-pie" theme="sky" onClick={()=>onNavigate('insight')} />
                         <LobbyCard id="calendar" title="紀錄" sub="Record" icon="fa-regular fa-calendar" theme="emerald" onClick={()=>onNavigate('calendar')} />
                         <LobbyCard id="vault" title="金庫" sub="Asset" icon="fa-solid fa-vault" theme="rose" onClick={()=>onNavigate('vault')} isVault />
+                    </div>
+
+                    {/* v3.0 Murmur Capsule */}
+                    <div className="safe-bottom pb-4">
+                        <button onClick={onOpenMurmur} className="w-full bg-white rounded-full py-4 shadow-float flex items-center justify-between px-6 active:scale-[0.98] transition-transform border border-base-100">
+                            <span className="text-base-400 text-sm font-bold tracking-wide">碎念 Murmur...</span>
+                            <div className="w-8 h-8 rounded-full bg-base-100 flex items-center justify-center text-base-500">
+                                <i className="fa-solid fa-microphone"></i>
+                            </div>
+                        </button>
                     </div>
                 </div>
             );
@@ -160,16 +162,20 @@
             )
         };
 
-        // 2. Page Container
+        // 2. Page Container (v3.0 Enhanced Back Button)
         const PageContainer = ({ title, onBack, children, extraIcon, onExtraClick, noScroll }) => (
             <div className="h-full flex flex-col bg-base-50 animate-zoom-in">
-                <div className="safe-top glass-panel sticky top-0 z-40 flex-none">
+                <div className="safe-top glass-panel sticky top-0 z-50 flex-none">
                     <div className="h-[60px] flex items-center justify-between px-4">
-                        <button onClick={onBack} className="w-10 h-10 rounded-full bg-white/50 flex items-center justify-center text-base-800 active:bg-base-200 transition-colors">
-                            <i className="fa-solid fa-arrow-left"></i>
+                        {/* v3.0 Solid Back Button */}
+                        <button onClick={onBack} className="bg-base-800 text-white rounded-full px-4 py-2 flex items-center gap-2 active:scale-90 transition-transform shadow-md">
+                            <i className="fa-solid fa-arrow-left text-xs"></i>
+                            <span className="text-xs font-bold">返回</span>
                         </button>
+                        
                         <span className="text-base font-bold text-base-800 tracking-wide">{title}</span>
-                        <div className="w-10 flex justify-end">
+                        
+                        <div className="w-16 flex justify-end">
                             {extraIcon && (
                                 <button onClick={onExtraClick} className="w-10 h-10 rounded-full bg-white/50 flex items-center justify-center text-base-800 active:bg-base-200">
                                     <i className={`fa-solid ${extraIcon}`}></i>
@@ -209,67 +215,76 @@
             </PageContainer>
         );
 
-        // 4. Insight Page (v2.0 Dual Dimension)
+        // 4. Insight Page (v3.0 Pain Philosophy + Date Nav)
         const InsightPage = ({ transactions, onBack }) => {
-            const [mode, setMode] = useState('method'); // 'method' | 'category'
-            const currentMonth = new Date().getMonth() + 1;
+            const [mode, setMode] = useState('method');
+            const [year, setYear] = useState(new Date().getFullYear());
+            const [month, setMonth] = useState(new Date().getMonth() + 1);
 
             const stats = useMemo(() => {
-                const filtered = transactions.filter(t => t.type === 'expense' && new Date(t.date).getMonth() + 1 === currentMonth);
+                const targetPrefix = `${year}-${String(month).padStart(2,'0')}`;
+                const filtered = transactions.filter(t => t.type === 'expense' && t.date.startsWith(targetPrefix));
                 const total = filtered.reduce((a, b) => a + b.amount, 0);
                 
-                // Method Logic
                 const byMethod = { cash: 0, mobile: 0, card: 0 };
-                
-                // Category Logic
                 const byCat = {};
 
                 filtered.forEach(t => { 
-                    // Method
                     if(byMethod[t.method] !== undefined) byMethod[t.method] += t.amount;
-                    // Category
                     byCat[t.category] = (byCat[t.category] || 0) + t.amount;
                 });
 
-                // Convert Cat map to sorted array
                 const sortedCats = Object.entries(byCat)
                     .map(([k, v]) => ({ label: k, amount: v, pct: total===0?0:Math.round(v/total*100) }))
                     .sort((a,b) => b.amount - a.amount);
 
                 return { total, byMethod, sortedCats };
-            }, [transactions]);
+            }, [transactions, year, month]);
             
             const getPct = (val) => stats.total === 0 ? 0 : Math.round((val / stats.total) * 100);
 
+            const changeMonth = (delta) => {
+                let m = month + delta;
+                let y = year;
+                if(m > 12) { m = 1; y++; }
+                if(m < 1) { m = 12; y--; }
+                setMonth(m); setYear(y);
+            };
+
             return (
                 <PageContainer title="透視 Insight" onBack={onBack}>
-                    <div className="px-6 pt-6 pb-10">
-                        {/* Summary Header */}
-                        <div className="mb-6">
-                            <div className="text-3xl font-bold text-base-800 font-num">${formatMoney(stats.total)}</div>
-                            <div className="text-xs font-bold text-base-400 mt-1">{currentMonth}月總支出</div>
+                    <div className="px-6 pt-4 pb-10">
+                        {/* v3.0 Date Nav */}
+                        <div className="flex justify-center items-center gap-4 mb-6">
+                            <button onClick={()=>changeMonth(-1)} className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center text-base-400"><i className="fa-solid fa-chevron-left text-xs"></i></button>
+                            <span className="text-base font-bold text-base-800 num-font">{year}年 {month}月</span>
+                            <button onClick={()=>changeMonth(1)} className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center text-base-400"><i className="fa-solid fa-chevron-right text-xs"></i></button>
                         </div>
 
-                        {/* v2.0 Dimension Switcher */}
+                        {/* Summary */}
+                        <div className="mb-6 text-center">
+                            <div className="text-3xl font-bold text-base-800 font-num">${formatMoney(stats.total)}</div>
+                            <div className="text-xs font-bold text-base-400 mt-1">總支出</div>
+                        </div>
+
+                        {/* Switcher */}
                         <div className="flex justify-center mb-8">
-                            <div className="bg-base-200 p-1 rounded-full flex gap-1">
+                            <div className="bg-base-200 p-1 rounded-full flex gap-1 shadow-inner">
                                 <button onClick={() => setMode('method')} className={`px-5 py-2 rounded-full text-xs font-bold transition-all ${mode==='method'?'bg-white text-base-800 shadow-sm':'text-base-500'}`}>支付方式</button>
                                 <button onClick={() => setMode('category')} className={`px-5 py-2 rounded-full text-xs font-bold transition-all ${mode==='category'?'bg-white text-base-800 shadow-sm':'text-base-500'}`}>消費類別</button>
                             </div>
                         </div>
 
-                        {/* Dynamic Content */}
+                        {/* Content */}
                         <div className="space-y-4 animate-fade-in">
                             {mode === 'method' ? (
                                 <>
-                                    <MethodBar label="現金" icon="fa-coins" color={METHODS.cash.color} bar={METHODS.cash.bar} amount={stats.byMethod.cash} pct={getPct(stats.byMethod.cash)} />
-                                    <MethodBar label="行動" icon="fa-mobile-screen" color={METHODS.mobile.color} bar={METHODS.mobile.bar} amount={stats.byMethod.mobile} pct={getPct(stats.byMethod.mobile)} />
-                                    <MethodBar label="信用卡" icon="fa-credit-card" color={METHODS.card.color} bar={METHODS.card.bar} amount={stats.byMethod.card} pct={getPct(stats.byMethod.card)} />
+                                    <MethodBar label="現金" sub="實感支出" icon="fa-coins" color={METHODS.cash.color} bar={METHODS.cash.bar} amount={stats.byMethod.cash} pct={getPct(stats.byMethod.cash)} painType="solid" />
+                                    <MethodBar label="行動" sub="無痛累積" icon="fa-mobile-screen" color={METHODS.mobile.color} bar={METHODS.mobile.bar} amount={stats.byMethod.mobile} pct={getPct(stats.byMethod.mobile)} painType="ghost" />
+                                    <MethodBar label="信用卡" sub="無痛累積" icon="fa-credit-card" color={METHODS.card.color} bar={METHODS.card.bar} amount={stats.byMethod.card} pct={getPct(stats.byMethod.card)} painType="ghost" />
                                 </>
                             ) : (
-                                stats.sortedCats.map((c, i) => (
-                                    <CategoryBar key={i} label={c.label} amount={c.amount} pct={c.pct} />
-                                ))
+                                stats.sortedCats.map((c, i) => <CategoryBar key={i} label={c.label} amount={c.amount} pct={c.pct} />)
                             )}
                         </div>
                     </div>
@@ -277,23 +292,27 @@
             );
         };
 
-        const MethodBar = ({ label, icon, color, bar, amount, pct }) => (
-            <div className="bg-white p-4 rounded-2xl shadow-sm border border-base-100">
-                <div className="flex justify-between items-center mb-2">
+        // v3.0 Pain Bar Visualization
+        const MethodBar = ({ label, sub, icon, color, bar, amount, pct, painType }) => (
+            <div className={`p-4 rounded-2xl shadow-sm border border-base-100 flex flex-col gap-3 ${painType === 'solid' ? 'bg-white' : 'bg-white/60 backdrop-blur-sm'}`}>
+                <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
                         <i className={`fa-solid ${icon} ${color}`}></i>
-                        <span className="text-sm font-bold text-base-700">{label}</span>
+                        <div>
+                            <span className="text-sm font-bold text-base-700 block">{label}</span>
+                            <span className="text-[10px] text-base-400 font-bold block">{sub}</span>
+                        </div>
                     </div>
                     <span className="text-sm font-bold font-num text-base-800">${formatMoney(amount)}</span>
                 </div>
-                <div className="w-full h-2 bg-base-100 rounded-full overflow-hidden">
-                    <div style={{width: `${pct}%`}} className={`h-full ${bar} transition-all duration-500`}></div>
+                {/* Pain Bar: Solid vs Gradient/Ghost */}
+                <div className="w-full h-3 bg-base-100 rounded-full overflow-hidden relative">
+                    <div style={{width: `${pct}%`}} className={`h-full ${bar} transition-all duration-500 absolute top-0 left-0 ${painType==='ghost'?'opacity-70':''}`}></div>
                 </div>
-                <div className="text-right mt-1 text-[10px] font-bold text-base-400">{pct}%</div>
+                <div className="text-right text-[10px] font-bold text-base-400">{pct}%</div>
             </div>
         );
 
-        // v2.0 New Category Bar Component
         const CategoryBar = ({ label, amount, pct }) => (
             <div className="bg-white px-4 py-3 rounded-xl border border-base-100 flex items-center gap-3">
                 <div className="w-12 text-xs font-bold text-base-600 truncate">{label}</div>
@@ -309,23 +328,33 @@
             </div>
         );
 
-        // 5. Calendar Page (v2.0 Locked Header + Scrollable List)
-        const CalendarPage = ({ transactions, onBack }) => {
-            const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
+        // 5. Record Page (v3.0 Locked Header + Y/M/D)
+        const RecordPage = ({ transactions, onBack }) => {
+            const [year, setYear] = useState(new Date().getFullYear());
+            const [month, setMonth] = useState(new Date().getMonth() + 1);
             const [selectedDate, setSelectedDate] = useState(getToday());
-            const days = useMemo(() => getCalendarDays(new Date().getFullYear(), currentMonth), [currentMonth]);
+            
+            const days = useMemo(() => getCalendarDays(year, month), [year, month]);
             const dailyTx = transactions.filter(t => t.date === selectedDate);
             const hasTx = (d) => transactions.some(t => t.date === d);
 
+            const changeMonth = (delta) => {
+                let m = month + delta;
+                let y = year;
+                if(m > 12) { m = 1; y++; }
+                if(m < 1) { m = 12; y--; }
+                setMonth(m); setYear(y);
+            };
+
             return (
                 <PageContainer title="紀錄 Record" onBack={onBack} noScroll={true}>
-                    {/* Fixed Top Section: Calendar Grid */}
+                    {/* Locked Header */}
                     <div className="flex-none bg-base-50 px-4 py-4 border-b border-base-200 z-10 shadow-sm">
-                        {/* Month Nav */}
+                        {/* Y/M Nav */}
                         <div className="flex justify-between items-center mb-4 px-2">
-                            <button onClick={() => setCurrentMonth(m => m===1?12:m-1)}><i className="fa-solid fa-chevron-left text-base-400"></i></button>
-                            <span className="text-lg font-bold text-base-800">{currentMonth}月</span>
-                            <button onClick={() => setCurrentMonth(m => m===12?1:m+1)}><i className="fa-solid fa-chevron-right text-base-400"></i></button>
+                            <button onClick={()=>changeMonth(-1)} className="w-8 h-8 flex items-center justify-center text-base-400 hover:text-base-800 bg-white rounded-full shadow-sm"><i className="fa-solid fa-chevron-left"></i></button>
+                            <span className="text-lg font-bold text-base-800 num-font">{year}年 {month}月</span>
+                            <button onClick={()=>changeMonth(1)} className="w-8 h-8 flex items-center justify-center text-base-400 hover:text-base-800 bg-white rounded-full shadow-sm"><i className="fa-solid fa-chevron-right"></i></button>
                         </div>
                         {/* Grid */}
                         <div className="grid grid-cols-7 gap-1">
@@ -345,11 +374,11 @@
                         </div>
                     </div>
 
-                    {/* Scrollable Bottom Section: List */}
+                    {/* Scrollable List */}
                     <div className="flex-1 overflow-y-auto no-scrollbar p-4 bg-white/50">
-                        <div className="text-xs font-bold text-base-400 mb-3 sticky top-0 bg-white/50 backdrop-blur py-2">{selectedDate} 流水帳</div>
+                        <div className="text-xs font-bold text-base-400 mb-3 sticky top-0 bg-white/50 backdrop-blur py-2 z-10">{selectedDate} 流水帳</div>
                         {dailyTx.length === 0 ? <div className="text-center text-xs text-base-300 py-8">本日無紀錄</div> : dailyTx.map(t => <TxItem key={t.id} tx={t} />)}
-                        <div className="h-10"></div> {/* Bottom Spacer */}
+                        <div className="h-10"></div>
                     </div>
                 </PageContainer>
             );
@@ -359,7 +388,6 @@
         const VaultPage = ({ transactions, onBack }) => {
             const [visible, setVisible] = useState(false);
             const net = useMemo(() => transactions.reduce((a, b) => b.type === 'income' ? a + b.amount : a - b.amount, 0), [transactions]);
-
             return (
                 <PageContainer title="金庫 Vault" onBack={onBack}>
                     <div className="flex flex-col items-center justify-center h-[60vh] px-6">
@@ -427,12 +455,10 @@
                             <span className="text-lg font-bold text-base-800">{mode==='income'?'進帳':'支出'}</span>
                             <button onClick={onClose}><i className="fa-solid fa-xmark text-base-400 text-xl"></i></button>
                         </div>
-                        
                         <div className="flex justify-center mb-8 relative">
                             <span className="text-2xl text-base-300 absolute left-8 top-2">$</span>
                             <input autoFocus type="number" value={amount} onChange={e=>setAmount(e.target.value)} placeholder="0" className="text-5xl font-bold text-center w-full outline-none font-num text-base-800 bg-transparent placeholder-base-100"/>
                         </div>
-
                         {mode === 'expense' && (
                             <div className="mb-6">
                                 <div className="text-xs font-bold text-base-300 uppercase tracking-widest text-center mb-3">Payment</div>
@@ -446,7 +472,6 @@
                                 </div>
                             </div>
                         )}
-
                         <div className="mb-8">
                             <div className="text-xs font-bold text-base-300 uppercase tracking-widest text-center mb-3">Category</div>
                             <div className="flex flex-wrap justify-center gap-2">
@@ -455,8 +480,58 @@
                                 ))}
                             </div>
                         </div>
-
                         <button onClick={submit} className={`w-full py-4 rounded-xl text-white font-bold text-lg active:scale-95 transition-transform ${mode==='income'?'bg-emerald-500':'bg-base-800'}`}>確認</button>
+                    </div>
+                </div>
+            );
+        };
+
+        // v3.0 Murmur Capsule Modal
+        const MurmurModal = ({ onClose, onSave }) => {
+            const [text, setText] = useState('');
+            const [listening, setListening] = useState(false);
+            const recognitionRef = useRef(null);
+
+            useEffect(() => {
+                if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    recognitionRef.current = new SpeechRecognition();
+                    recognitionRef.current.continuous = false;
+                    recognitionRef.current.lang = 'zh-TW';
+                    recognitionRef.current.interimResults = false;
+                    recognitionRef.current.onresult = (event) => {
+                        const transcript = event.results[0][0].transcript;
+                        setText(prev => prev + transcript);
+                        setListening(false);
+                    };
+                    recognitionRef.current.onerror = () => setListening(false);
+                    recognitionRef.current.onend = () => setListening(false);
+                }
+            }, []);
+
+            const toggleListen = () => {
+                if(!recognitionRef.current) { alert('您的瀏覽器不支援語音辨識'); return; }
+                if(listening) { recognitionRef.current.stop(); setListening(false); }
+                else { recognitionRef.current.start(); setListening(true); }
+            };
+
+            const save = () => { if(text) onSave(text); onClose(); };
+
+            return (
+                <div className="fixed inset-0 z-[100] flex flex-col justify-end">
+                    <div className="absolute inset-0 bg-base-900/30 backdrop-blur-sm" onClick={onClose}></div>
+                    <div className="bg-white rounded-t-3xl p-6 w-full animate-slide-up relative z-10 safe-bottom">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="font-bold text-base-800">碎念 Murmur</h3>
+                            <button onClick={onClose}><i className="fa-solid fa-xmark text-base-400"></i></button>
+                        </div>
+                        <textarea value={text} onChange={e=>setText(e.target.value)} placeholder="好想買那個...但好貴..." className="w-full h-32 p-4 bg-base-50 rounded-xl outline-none resize-none mb-4 text-base-800"></textarea>
+                        <div className="flex gap-4">
+                            <button onClick={toggleListen} className={`w-14 h-14 rounded-full flex items-center justify-center transition-all ${listening ? 'bg-rose-500 text-white animate-pulse' : 'bg-base-100 text-base-500'}`}>
+                                <i className={`fa-solid ${listening ? 'fa-stop' : 'fa-microphone'}`}></i>
+                            </button>
+                            <button onClick={save} className="flex-1 bg-base-800 text-white rounded-xl font-bold">紀錄心情</button>
+                        </div>
                     </div>
                 </div>
             );
@@ -466,21 +541,29 @@
         const App = () => {
             const [page, setPage] = useState('home'); 
             const [txs, setTxs] = useState([]);
+            const [notes, setNotes] = useState([]);
             const [addMode, setAddMode] = useState(null);
+            const [murmurOpen, setMurmurOpen] = useState(false);
 
-            useEffect(() => { const d = localStorage.getItem(DB_KEY); if(d) setTxs(JSON.parse(d)); }, []);
-            const save = (t) => { const n = [t,...txs]; setTxs(n); localStorage.setItem(DB_KEY, JSON.stringify(n)); };
-            const del = (id) => { const n = txs.filter(t=>t.id!==id); setTxs(n); localStorage.setItem(DB_KEY, JSON.stringify(n)); };
+            useEffect(() => { 
+                const d = localStorage.getItem(DB_KEY); if(d) setTxs(JSON.parse(d)); 
+                const n = localStorage.getItem(NOTE_KEY); if(n) setNotes(JSON.parse(n));
+            }, []);
+            
+            const saveTx = (t) => { const n = [t,...txs]; setTxs(n); localStorage.setItem(DB_KEY, JSON.stringify(n)); };
+            const delTx = (id) => { const n = txs.filter(t=>t.id!==id); setTxs(n); localStorage.setItem(DB_KEY, JSON.stringify(n)); };
+            const saveNote = (txt) => { const n = [{id:Date.now(), text:txt, date:getToday()}, ...notes]; setNotes(n); localStorage.setItem(NOTE_KEY, JSON.stringify(n)); };
 
             return (
                 <div className="h-full w-full bg-base-50 text-base-800">
-                    {page === 'home' && <HomeLobby onNavigate={setPage} />}
-                    {page === 'journal' && <JournalPage transactions={txs} onBack={()=>setPage('home')} onOpenAdd={setAddMode} onDelete={del} />}
+                    {page === 'home' && <HomeLobby onNavigate={setPage} onOpenMurmur={()=>setMurmurOpen(true)} />}
+                    {page === 'journal' && <JournalPage transactions={txs} onBack={()=>setPage('home')} onOpenAdd={setAddMode} onDelete={delTx} />}
                     {page === 'insight' && <InsightPage transactions={txs} onBack={()=>setPage('home')} />}
-                    {page === 'calendar' && <CalendarPage transactions={txs} onBack={()=>setPage('home')} />}
+                    {page === 'calendar' && <RecordPage transactions={txs} onBack={()=>setPage('home')} />}
                     {page === 'vault' && <VaultPage transactions={txs} onBack={()=>setPage('home')} />}
                     
-                    {addMode && <AddModal mode={addMode} onClose={()=>setAddMode(null)} onSave={save} />}
+                    {addMode && <AddModal mode={addMode} onClose={()=>setAddMode(null)} onSave={saveTx} />}
+                    {murmurOpen && <MurmurModal onClose={()=>setMurmurOpen(false)} onSave={saveNote} />}
                 </div>
             );
         };
@@ -489,9 +572,7 @@
         root.render(<App />);
 
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./service-worker.js');
-            });
+            window.addEventListener('load', () => { navigator.serviceWorker.register('./service-worker.js'); });
         }
     </script>
 </body>
