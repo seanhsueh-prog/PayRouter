@@ -1,11 +1,10 @@
-const CACHE_NAME = 'cfs-cache-v1.0';
+const CACHE_NAME = 'cfs-cache-v1.1'; // 更新為 v1.1
 
 // 定義需要快取的資源
-// 包含主程式、設定檔以及外部的 CDN 函式庫 (React, Tailwind, FontAwesome)
 const ASSETS_TO_CACHE = [
-  './CashFlowSense_v1.0.html',
+  './CashFlowSense_v1.1.html', // 鎖定 v1.1 主程式
   './manifest.json',
-  // External assets
+  // 外部 CDN 資源
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/react@18/umd/react.production.min.js',
   'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js',
@@ -13,9 +12,9 @@ const ASSETS_TO_CACHE = [
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
 ];
 
-// 1. 安裝階段 (Install): 快取靜態資源
+// 1. 安裝階段
 self.addEventListener('install', (event) => {
-  self.skipWaiting(); // 強制跳過等待，讓新版 SW 立刻生效
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS_TO_CACHE);
@@ -23,42 +22,34 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// 2. 啟動階段 (Activate): 清理舊版快取
+// 2. 啟動階段 (清理舊版)
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => Promise.all(
       keys.map((key) => {
         if (key !== CACHE_NAME) {
-          return caches.delete(key); // 刪除不屬於當前版本的快取
+          return caches.delete(key);
         }
       })
-    )).then(() => self.clients.claim()) // 立即取得頁面控制權
+    )).then(() => self.clients.claim())
   );
 });
 
-// 3. 請求攔截 (Fetch): 決定資源載入策略
+// 3. 請求攔截
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // 策略 A: 針對 HTML 檔案 -> Network First (網路優先)
-  // 確保使用者重新整理時能立刻看到 HTML 的內容更新
   if (url.pathname.endsWith('.html') || url.pathname.endsWith('/')) {
     event.respondWith(
       fetch(event.request)
         .then(res => {
-          // 連網成功：複製一份存入快取，供下次離線使用
           const clone = res.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
           return res;
         })
-        .catch(() => {
-          // 連網失敗（離線）：回傳快取中的舊版頁面
-          return caches.match(event.request);
-        })
+        .catch(() => caches.match(event.request))
     );
   } else {
-    // 策略 B: 針對靜態資源 (JS, CSS, Images) -> Cache First (快取優先)
-    // 加快載入速度，省流量
     event.respondWith(
       caches.match(event.request).then(res => res || fetch(event.request))
     );
