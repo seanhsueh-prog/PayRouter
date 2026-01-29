@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>CashFlow Sense v1.1</title>
+    <title>CashFlow Sense v1.2</title>
     
     <link rel="manifest" href="./manifest.json">
-    <meta name="theme-color" content="#FAFAF9">
+    <meta name="theme-color" content="#F5F5F4"> <!-- Stone-100 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="./icon-192.png">
@@ -18,31 +18,42 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- 莫蘭迪色系設定 -->
+    <!-- 莫蘭迪微光色系 (Morandi & Glow) -->
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        base: { 50: '#FAFAF9', 100: '#F5F5F4', 200: '#E7E5E4', 500: '#78716C', 800: '#44403C', 900: '#292524' },
-                        // 現金 (Sage)
-                        cash: { 100: '#ECFDF5', 500: '#10B981', 600: '#059669' },
-                        // 行動 (Slate/Blue Grey)
-                        mobile: { 100: '#F1F5F9', 500: '#64748B', 600: '#475569' },
-                        // 信用卡 (Rose/Terracotta)
-                        card: { 100: '#FFF1F2', 500: '#F43F5E', 600: '#E11D48' },
+                        // 基底：暖石灰
+                        base: { 50: '#FAFAF9', 100: '#F5F5F4', 200: '#E7E5E4', 300: '#D6D3D1', 800: '#44403C', 900: '#292524' },
+                        // 入口主題色 (低飽和漸層用)
+                        journal: { 100: '#E8E8E8', 500: '#737373' }, // Neutral Grey
+                        insight: { 100: '#E0F2FE', 500: '#7DD3FC', 800: '#075985' }, // Haze Blue
+                        calendar: { 100: '#F0FDF4', 500: '#86EFAC', 800: '#166534' }, // Sage Green
+                        vault: { 100: '#FFF1F2', 500: '#FDA4AF', 800: '#9F1239' }, // Dusty Rose
+                        // 支付方式
+                        cash: '#78716C', // Stone
+                        mobile: '#64748B', // Slate Blue
+                        card: '#9F1239', // Rose Red
                     },
                     boxShadow: {
-                        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
-                        'float': '0 10px 30px -10px rgba(0, 0, 0, 0.08)',
+                        'soft': '0 4px 20px -2px rgba(68, 64, 60, 0.05)',
+                        'card': '0 10px 15px -3px rgba(68, 64, 60, 0.05), 0 4px 6px -2px rgba(68, 64, 60, 0.02)',
+                        'inner-light': 'inset 0 2px 4px 0 rgba(255, 255, 255, 0.3)',
                     },
                     animation: {
-                        'fade-in': 'fadeIn 0.2s ease-out',
+                        'fade-in': 'fadeIn 0.4s ease-out',
                         'slide-up': 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                        'zoom-in': 'zoomIn 0.2s ease-out',
                     },
                     keyframes: {
                         fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
-                        slideUp: { '0%': { transform: 'translateY(100%)' }, '100%': { transform: 'translateY(0)' } }
+                        slideUp: { '0%': { transform: 'translateY(100%)' }, '100%': { transform: 'translateY(0)' } },
+                        zoomIn: { '0%': { transform: 'scale(0.95)', opacity: '0' }, '100%': { transform: 'scale(1)', opacity: '1' } }
+                    },
+                    fontFamily: {
+                        'sans': ['-apple-system', 'BlinkMacSystemFont', "Segoe UI", 'Roboto', 'sans-serif'],
+                        'num': ['SF Pro Display', 'Roboto', 'sans-serif']
                     }
                 }
             }
@@ -50,12 +61,19 @@
     </script>
 
     <style>
-        html, body, #root { height: 100%; overflow: hidden; background-color: #FAFAF9; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; -webkit-tap-highlight-color: transparent; user-select: none; }
+        html, body, #root { height: 100%; overflow: hidden; background-color: #F5F5F4; }
+        body { -webkit-tap-highlight-color: transparent; user-select: none; }
         .safe-top { padding-top: env(safe-area-inset-top); }
         .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        .num-font { font-family: 'SF Pro Display', 'Roboto', sans-serif; letter-spacing: -0.5px; }
+        
+        /* 玻璃質感 */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
     </style>
 </head>
 <body>
@@ -74,203 +92,279 @@
             let days = [];
             for(let i=0; i<firstDay.getDay(); i++) days.push(null);
             for(let i=1; i<=lastDay.getDate(); i++) {
-                const dateStr = `${year}-${String(month).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-                days.push({ day: i, dateStr });
+                days.push({ day: i, dateStr: `${year}-${String(month).padStart(2,'0')}-${String(i).padStart(2,'0')}` });
             }
             return days;
         };
 
-        // --- Icons & Config ---
+        // --- Config ---
         const METHODS = {
-            cash: { id: 'cash', label: '現金', color: 'text-cash-600', bg: 'bg-cash-100', icon: 'fa-coins' },
-            mobile: { id: 'mobile', label: '行動', color: 'text-mobile-600', bg: 'bg-mobile-100', icon: 'fa-mobile-screen' },
-            card: { id: 'card', label: '信用卡', color: 'text-card-600', bg: 'bg-card-100', icon: 'fa-credit-card' },
-            bank: { id: 'bank', label: '轉帳', color: 'text-base-500', bg: 'bg-base-200', icon: 'fa-building-columns' } // For Income
+            cash: { id: 'cash', label: '現金', color: 'text-stone-600', bg: 'bg-stone-100', border: 'border-stone-200', icon: 'fa-coins' },
+            mobile: { id: 'mobile', label: '行動', color: 'text-slate-600', bg: 'bg-slate-100', border: 'border-slate-200', icon: 'fa-mobile-screen' },
+            card: { id: 'card', label: '信用卡', color: 'text-rose-700', bg: 'bg-rose-50', border: 'border-rose-100', icon: 'fa-credit-card' },
+            bank: { id: 'bank', label: '轉帳', color: 'text-gray-600', bg: 'bg-gray-100', border: 'border-gray-200', icon: 'fa-building-columns' }
         };
 
-        // --- Pages Components ---
+        // --- Components ---
 
-        // 1. Home Page
-        const HomePage = ({ balance, recentTx, onOpenAdd }) => (
-            <div className="flex flex-col h-full animate-fade-in px-6 pt-6">
-                
-                {/* Logo & Version Area */}
-                <div className="mt-4 mb-6 flex flex-col items-center justify-center safe-top">
-                    <div className="w-16 h-16 bg-white rounded-2xl shadow-soft flex items-center justify-center text-base-800 mb-3 border border-base-100">
-                        <i className="fa-solid fa-wallet text-3xl"></i>
-                    </div>
-                    <h1 className="text-xl font-bold text-base-900 tracking-wide">Cash Flow Sense</h1>
-                    <span className="text-[10px] text-base-400 font-bold bg-base-200 px-2 py-0.5 rounded-full mt-1">v1.1</span>
-                </div>
-
-                {/* Net Asset Card */}
-                <div className="bg-base-800 text-white rounded-2xl p-6 shadow-float mb-8 relative overflow-hidden">
-                    <div className="absolute right-[-20px] top-[-20px] w-32 h-32 bg-white opacity-5 rounded-full blur-2xl"></div>
-                    <div className="text-xs text-base-300 font-medium tracking-wider mb-1">淨資產結餘</div>
-                    <div className="text-4xl font-bold num-font">${formatMoney(balance)}</div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="grid grid-cols-2 gap-4 mb-8">
-                    <button onClick={() => onOpenAdd('income')} className="bg-white border border-base-200 rounded-xl py-4 shadow-soft active:scale-95 transition-transform flex flex-col items-center gap-2">
-                        <div className="w-10 h-10 rounded-full bg-cash-100 text-cash-600 flex items-center justify-center"><i className="fa-solid fa-plus"></i></div>
-                        <span className="text-sm font-bold text-base-600">記進帳</span>
-                    </button>
-                    <button onClick={() => onOpenAdd('expense')} className="bg-white border border-base-200 rounded-xl py-4 shadow-soft active:scale-95 transition-transform flex flex-col items-center gap-2">
-                        <div className="w-10 h-10 rounded-full bg-card-100 text-card-600 flex items-center justify-center"><i className="fa-solid fa-minus"></i></div>
-                        <span className="text-sm font-bold text-base-600">記支出</span>
-                    </button>
-                </div>
-
-                {/* Recent List Header */}
-                <div className="flex justify-between items-center mb-2">
-                    <span className="text-xs font-bold text-base-400 uppercase tracking-widest">近期紀錄</span>
-                </div>
-                
-                <div className="flex-1 overflow-y-auto pb-24 no-scrollbar">
-                    {recentTx.length === 0 ? (
-                        <div className="text-center text-base-300 text-xs py-10">尚無紀錄，開始記帳吧</div>
-                    ) : (
-                        recentTx.map(t => <TxItem key={t.id} tx={t} />)
-                    )}
-                </div>
-            </div>
-        );
-
-        // 2. Calendar Page
-        const CalendarPage = ({ transactions, currentMonth, setCurrentMonth }) => {
-            const [selectedDate, setSelectedDate] = useState(getToday());
-            
-            const days = useMemo(() => getCalendarDays(new Date().getFullYear(), currentMonth), [currentMonth]);
-            
-            const dailyTx = useMemo(() => transactions.filter(t => t.date === selectedDate), [selectedDate, transactions]);
-
-            const hasTx = (dateStr) => transactions.some(t => t.date === dateStr);
-
+        // 1. Home Lobby (The Ritual Entry)
+        const HomeLobby = ({ onNavigate }) => {
             return (
-                <div className="flex flex-col h-full animate-fade-in pt-safe-top">
-                    {/* Month Switcher */}
-                    <div className="flex items-center justify-between px-6 py-4 bg-base-50 sticky top-0 z-10 safe-top">
-                        <button onClick={() => setCurrentMonth(m => m===1?12:m-1)} className="w-8 h-8 flex items-center justify-center text-base-400 hover:text-base-800"><i className="fa-solid fa-chevron-left"></i></button>
-                        <span className="text-lg font-bold text-base-800">{currentMonth}月</span>
-                        <button onClick={() => setCurrentMonth(m => m===12?1:m+1)} className="w-8 h-8 flex items-center justify-center text-base-400 hover:text-base-800"><i className="fa-solid fa-chevron-right"></i></button>
+                <div className="h-full flex flex-col p-6 animate-fade-in relative">
+                    {/* Header: Logo & Version */}
+                    <div className="safe-top pt-8 pb-6 flex flex-col items-center justify-center">
+                        <div className="w-14 h-14 bg-white rounded-2xl shadow-soft flex items-center justify-center text-base-800 mb-3 border border-base-200">
+                            <i className="fa-solid fa-layer-group text-2xl text-stone-600"></i>
+                        </div>
+                        <h1 className="text-lg font-bold text-base-800 tracking-wider">CASH FLOW SENSE</h1>
+                        <span className="text-[10px] text-base-400 font-bold tracking-widest mt-1 opacity-60">v1.2 PERSONAL</span>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto no-scrollbar pb-24">
-                        {/* Calendar Grid */}
-                        <div className="px-4 mb-6">
-                            <div className="grid grid-cols-7 text-center mb-2">
-                                {['日','一','二','三','四','五','六'].map(d => <span key={d} className="text-[10px] text-base-400 font-bold">{d}</span>)}
+                    {/* The Matrix: 4 Ritual Cards */}
+                    <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-4 pb-12">
+                        
+                        {/* 1. Journal (日常) */}
+                        <button onClick={() => onNavigate('journal')} className="group relative bg-white rounded-3xl shadow-card p-5 flex flex-col justify-between items-start transition-all active:scale-[0.98] border border-base-100 overflow-hidden">
+                            <div className="absolute right-0 top-0 w-24 h-24 bg-gradient-to-br from-stone-100 to-transparent rounded-full -mr-8 -mt-8 opacity-50 group-hover:scale-110 transition-transform"></div>
+                            <div className="w-10 h-10 rounded-full bg-stone-50 flex items-center justify-center text-stone-600 z-10">
+                                <i className="fa-solid fa-pen-nib"></i>
                             </div>
-                            <div className="grid grid-cols-7 gap-1">
-                                {days.map((d, i) => {
-                                    if(!d) return <div key={i} className="aspect-square"></div>;
-                                    const isSelected = d.dateStr === selectedDate;
-                                    const active = hasTx(d.dateStr);
-                                    return (
-                                        <div key={i} onClick={() => setSelectedDate(d.dateStr)} 
-                                            className={`aspect-square rounded-lg flex flex-col items-center justify-center text-xs font-bold cursor-pointer transition-all border ${isSelected ? 'bg-base-800 text-white border-base-800 shadow-md' : 'bg-white text-base-600 border-transparent hover:bg-base-100'}`}>
-                                            {d.day}
-                                            {active && !isSelected && <div className="w-1 h-1 rounded-full bg-card-500 mt-1"></div>}
-                                        </div>
-                                    )
-                                })}
+                            <div className="z-10">
+                                <div className="text-xs text-base-400 font-bold uppercase tracking-wider mb-1">Entry</div>
+                                <div className="text-lg font-bold text-base-800">日常</div>
                             </div>
-                        </div>
+                        </button>
 
-                        {/* Daily List */}
-                        <div className="px-4">
-                            <div className="text-xs font-bold text-base-400 mb-3 bg-base-200 inline-block px-2 py-1 rounded">
-                                {selectedDate}
+                        {/* 2. Insight (透視) */}
+                        <button onClick={() => onNavigate('insight')} className="group relative bg-white rounded-3xl shadow-card p-5 flex flex-col justify-between items-start transition-all active:scale-[0.98] border border-base-100 overflow-hidden">
+                            <div className="absolute right-0 top-0 w-24 h-24 bg-gradient-to-br from-sky-50 to-transparent rounded-full -mr-8 -mt-8 opacity-50 group-hover:scale-110 transition-transform"></div>
+                            <div className="w-10 h-10 rounded-full bg-sky-50 flex items-center justify-center text-sky-600 z-10">
+                                <i className="fa-solid fa-chart-pie"></i>
                             </div>
-                            {dailyTx.length === 0 ? (
-                                <div className="text-center text-base-300 text-xs py-4">本日無紀錄</div>
-                            ) : (
-                                dailyTx.map(t => <TxItem key={t.id} tx={t} />)
+                            <div className="z-10">
+                                <div className="text-xs text-base-400 font-bold uppercase tracking-wider mb-1">Analyze</div>
+                                <div className="text-lg font-bold text-base-800">透視</div>
+                            </div>
+                        </button>
+
+                        {/* 3. Calendar (回溯) */}
+                        <button onClick={() => onNavigate('calendar')} className="group relative bg-white rounded-3xl shadow-card p-5 flex flex-col justify-between items-start transition-all active:scale-[0.98] border border-base-100 overflow-hidden">
+                            <div className="absolute right-0 top-0 w-24 h-24 bg-gradient-to-br from-emerald-50 to-transparent rounded-full -mr-8 -mt-8 opacity-50 group-hover:scale-110 transition-transform"></div>
+                            <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 z-10">
+                                <i className="fa-regular fa-calendar"></i>
+                            </div>
+                            <div className="z-10">
+                                <div className="text-xs text-base-400 font-bold uppercase tracking-wider mb-1">Trace</div>
+                                <div className="text-lg font-bold text-base-800">回溯</div>
+                            </div>
+                        </button>
+
+                        {/* 4. Vault (金庫) */}
+                        <button onClick={() => onNavigate('vault')} className="group relative bg-white rounded-3xl shadow-card p-5 flex flex-col justify-between items-start transition-all active:scale-[0.98] border border-base-100 overflow-hidden">
+                            <div className="absolute right-0 top-0 w-24 h-24 bg-gradient-to-br from-rose-50 to-transparent rounded-full -mr-8 -mt-8 opacity-50 group-hover:scale-110 transition-transform"></div>
+                            <div className="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center text-rose-600 z-10">
+                                <i className="fa-solid fa-vault"></i>
+                            </div>
+                            <div className="z-10 w-full">
+                                <div className="text-xs text-base-400 font-bold uppercase tracking-wider mb-1">Asset</div>
+                                <div className="flex justify-between items-end w-full">
+                                    <div className="text-lg font-bold text-base-800">金庫</div>
+                                    <i className="fa-solid fa-lock text-xs text-base-300 mb-1"></i>
+                                </div>
+                            </div>
+                        </button>
+
+                    </div>
+                </div>
+            );
+        };
+
+        // 2. Page Container (Handles Header & Back)
+        const PageContainer = ({ title, onBack, children, extraIcon, onExtraClick }) => (
+            <div className="h-full flex flex-col bg-base-50 animate-zoom-in">
+                {/* Glass Header */}
+                <div className="safe-top glass-panel sticky top-0 z-40">
+                    <div className="h-[60px] flex items-center justify-between px-4">
+                        <button onClick={onBack} className="w-10 h-10 rounded-full bg-white/50 flex items-center justify-center text-base-800 active:bg-base-200 transition-colors">
+                            <i className="fa-solid fa-arrow-left"></i>
+                        </button>
+                        <span className="text-base font-bold text-base-800 tracking-wide">{title}</span>
+                        <div className="w-10 flex justify-end">
+                            {extraIcon && (
+                                <button onClick={onExtraClick} className="w-10 h-10 rounded-full bg-white/50 flex items-center justify-center text-base-800 active:bg-base-200">
+                                    <i className={`fa-solid ${extraIcon}`}></i>
+                                </button>
                             )}
                         </div>
                     </div>
                 </div>
-            );
-        };
+                {/* Content */}
+                <div className="flex-1 overflow-y-auto no-scrollbar relative">
+                    {children}
+                </div>
+            </div>
+        );
 
-        // 3. Analysis Page
-        const AnalysisPage = ({ transactions, currentMonth }) => {
+        // 3. Journal Page (日常) - List & Add
+        const JournalPage = ({ transactions, onBack, onOpenAdd, onDelete }) => (
+            <PageContainer title="日常 Journal" onBack={onBack}>
+                <div className="px-5 pt-4 pb-24">
+                    <div className="text-xs font-bold text-base-400 mb-4 px-1">近期流水</div>
+                    {transactions.length === 0 ? (
+                        <div className="py-20 text-center opacity-40">
+                            <i className="fa-solid fa-pen-nib text-4xl mb-3 text-base-300"></i>
+                            <p className="text-sm text-base-400">尚無紀錄</p>
+                        </div>
+                    ) : (
+                        transactions.slice(0, 20).map(t => <TxItem key={t.id} tx={t} onDelete={onDelete} />)
+                    )}
+                </div>
+                {/* FAB */}
+                <div className="fixed bottom-8 right-6 safe-bottom z-50 flex flex-col gap-3">
+                    <button onClick={() => onOpenAdd('income')} className="w-12 h-12 rounded-full bg-white shadow-lg text-emerald-600 flex items-center justify-center active:scale-90 transition-transform border border-base-100">
+                        <i className="fa-solid fa-plus"></i>
+                    </button>
+                    <button onClick={() => onOpenAdd('expense')} className="w-14 h-14 rounded-full bg-base-800 shadow-float text-white flex items-center justify-center active:scale-90 transition-transform">
+                        <i className="fa-solid fa-minus text-xl"></i>
+                    </button>
+                </div>
+            </PageContainer>
+        );
+
+        // 4. Insight Page (透視) - Analysis
+        const InsightPage = ({ transactions, onBack }) => {
+            const currentMonth = new Date().getMonth() + 1;
             const stats = useMemo(() => {
-                const filtered = transactions.filter(t => {
-                    const d = new Date(t.date);
-                    return (d.getMonth() + 1) === currentMonth && t.type === 'expense';
-                });
-                
-                const total = filtered.reduce((sum, t) => sum + t.amount, 0);
+                const filtered = transactions.filter(t => t.type === 'expense' && new Date(t.date).getMonth() + 1 === currentMonth);
+                const total = filtered.reduce((a, b) => a + b.amount, 0);
                 const byMethod = { cash: 0, mobile: 0, card: 0 };
-                
-                filtered.forEach(t => {
-                    if (byMethod[t.method] !== undefined) byMethod[t.method] += t.amount;
-                });
-
+                filtered.forEach(t => { if(byMethod[t.method] !== undefined) byMethod[t.method] += t.amount });
                 return { total, byMethod };
-            }, [transactions, currentMonth]);
-
+            }, [transactions]);
+            
             const getPct = (val) => stats.total === 0 ? 0 : Math.round((val / stats.total) * 100);
 
             return (
-                <div className="flex flex-col h-full animate-fade-in px-6 pt-safe-top">
-                    <div className="py-6">
-                        <h2 className="text-2xl font-bold text-base-800 mb-1">{currentMonth}月支付分析</h2>
-                        <p className="text-xs text-base-400">總支出 ${formatMoney(stats.total)}</p>
+                <PageContainer title="透視 Insight" onBack={onBack}>
+                    <div className="px-6 pt-6 pb-10">
+                        <div className="mb-8">
+                            <div className="text-3xl font-bold text-base-800 font-num">${formatMoney(stats.total)}</div>
+                            <div className="text-xs font-bold text-base-400 mt-1">{currentMonth}月總支出</div>
+                        </div>
+                        <div className="space-y-4">
+                            <MethodBar label="現金" icon="fa-coins" color="text-stone-600" bg="bg-stone-500" amount={stats.byMethod.cash} pct={getPct(stats.byMethod.cash)} />
+                            <MethodBar label="行動" icon="fa-mobile-screen" color="text-slate-600" bg="bg-slate-500" amount={stats.byMethod.mobile} pct={getPct(stats.byMethod.mobile)} />
+                            <MethodBar label="信用卡" icon="fa-credit-card" color="text-rose-700" bg="bg-rose-600" amount={stats.byMethod.card} pct={getPct(stats.byMethod.card)} />
+                        </div>
                     </div>
-
-                    <div className="space-y-4">
-                        <MethodCard method="cash" amount={stats.byMethod.cash} pct={getPct(stats.byMethod.cash)} />
-                        <MethodCard method="mobile" amount={stats.byMethod.mobile} pct={getPct(stats.byMethod.mobile)} />
-                        <MethodCard method="card" amount={stats.byMethod.card} pct={getPct(stats.byMethod.card)} />
-                    </div>
-                </div>
+                </PageContainer>
             );
         };
 
-        // --- Sub Components ---
+        const MethodBar = ({ label, icon, color, bg, amount, pct }) => (
+            <div className="bg-white p-4 rounded-2xl shadow-sm border border-base-100">
+                <div className="flex justify-between items-center mb-2">
+                    <div className="flex items-center gap-2">
+                        <i className={`fa-solid ${icon} ${color}`}></i>
+                        <span className="text-sm font-bold text-base-700">{label}</span>
+                    </div>
+                    <span className="text-sm font-bold font-num text-base-800">${formatMoney(amount)}</span>
+                </div>
+                <div className="w-full h-2 bg-base-100 rounded-full overflow-hidden">
+                    <div style={{width: `${pct}%`}} className={`h-full ${bg} transition-all duration-500`}></div>
+                </div>
+                <div className="text-right mt-1 text-[10px] font-bold text-base-400">{pct}%</div>
+            </div>
+        );
 
-        const TxItem = ({ tx }) => {
+        // 5. Calendar Page (回溯)
+        const CalendarPage = ({ transactions, onBack }) => {
+            const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
+            const [selectedDate, setSelectedDate] = useState(getToday());
+            const days = useMemo(() => getCalendarDays(new Date().getFullYear(), currentMonth), [currentMonth]);
+            const dailyTx = transactions.filter(t => t.date === selectedDate);
+            const hasTx = (d) => transactions.some(t => t.date === d);
+
+            return (
+                <PageContainer title="回溯 Calendar" onBack={onBack}>
+                    <div className="px-4 py-4">
+                        {/* Month Nav */}
+                        <div className="flex justify-between items-center mb-6 px-2">
+                            <button onClick={() => setCurrentMonth(m => m===1?12:m-1)}><i className="fa-solid fa-chevron-left text-base-400"></i></button>
+                            <span className="text-lg font-bold text-base-800">{currentMonth}月</span>
+                            <button onClick={() => setCurrentMonth(m => m===12?1:m+1)}><i className="fa-solid fa-chevron-right text-base-400"></i></button>
+                        </div>
+                        {/* Grid */}
+                        <div className="grid grid-cols-7 gap-1 mb-8">
+                            {['日','一','二','三','四','五','六'].map(d => <div key={d} className="text-center text-[10px] text-base-400 font-bold mb-2">{d}</div>)}
+                            {days.map((d, i) => {
+                                if(!d) return <div key={i}></div>;
+                                const isSel = d.dateStr === selectedDate;
+                                const active = hasTx(d.dateStr);
+                                return (
+                                    <div key={i} onClick={() => setSelectedDate(d.dateStr)} 
+                                        className={`aspect-square rounded-xl flex flex-col items-center justify-center text-xs font-bold transition-all cursor-pointer ${isSel ? 'bg-base-800 text-white shadow-lg' : 'bg-white text-base-600 hover:bg-base-100'}`}>
+                                        {d.day}
+                                        {active && !isSel && <div className="w-1 h-1 rounded-full bg-rose-400 mt-1"></div>}
+                                    </div>
+                                )
+                            })}
+                        </div>
+                        {/* Daily List */}
+                        <div className="bg-white rounded-2xl p-4 shadow-sm border border-base-100 min-h-[200px]">
+                            <div className="text-xs font-bold text-base-400 mb-4">{selectedDate}</div>
+                            {dailyTx.length === 0 ? <div className="text-center text-xs text-base-300 py-8">無紀錄</div> : dailyTx.map(t => <TxItem key={t.id} tx={t} />)}
+                        </div>
+                    </div>
+                </PageContainer>
+            );
+        };
+
+        // 6. Vault Page (金庫)
+        const VaultPage = ({ transactions, onBack }) => {
+            const [visible, setVisible] = useState(false);
+            const net = useMemo(() => transactions.reduce((a, b) => b.type === 'income' ? a + b.amount : a - b.amount, 0), [transactions]);
+
+            return (
+                <PageContainer title="金庫 Vault" onBack={onBack}>
+                    <div className="flex flex-col items-center justify-center h-[60vh] px-6">
+                        <div className="w-20 h-20 bg-white rounded-full shadow-soft flex items-center justify-center text-rose-800 mb-6 border border-rose-50">
+                            <i className={`fa-solid ${visible ? 'fa-lock-open' : 'fa-lock'} text-3xl`}></i>
+                        </div>
+                        <div className="text-xs font-bold text-base-400 uppercase tracking-widest mb-2">Total Assets</div>
+                        <div onClick={() => setVisible(!visible)} className="text-4xl font-bold text-base-800 font-num cursor-pointer select-none">
+                            {visible ? `$${formatMoney(net)}` : '••••••••'}
+                        </div>
+                        <p className="text-xs text-base-300 mt-4">點擊顯示/隱藏金額</p>
+                    </div>
+                </PageContainer>
+            );
+        };
+
+        // --- Shared Item ---
+        const TxItem = ({ tx, onDelete }) => {
             const m = METHODS[tx.method] || METHODS.cash;
             const isExp = tx.type === 'expense';
             return (
-                <div className="flex items-center justify-between p-4 bg-white rounded-xl mb-2 border border-base-100 shadow-sm">
+                <div className="flex justify-between items-center py-3 border-b border-base-100 last:border-0">
                     <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${isExp ? m.bg + ' ' + m.color : 'bg-cash-100 text-cash-600'}`}>
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm ${isExp ? m.bg + ' ' + m.color : 'bg-emerald-50 text-emerald-600'}`}>
                             <i className={`fa-solid ${isExp ? m.icon : 'fa-arrow-down'}`}></i>
                         </div>
                         <div>
                             <div className="text-sm font-bold text-base-800">{tx.category}</div>
-                            {isExp && <div className="text-[10px] text-base-400">{m.label}</div>}
+                            <div className="text-[10px] text-base-400">{tx.date.slice(5)} · {isExp ? m.label : '收入'}</div>
                         </div>
                     </div>
-                    <div className={`text-base font-bold num-font ${isExp ? m.color : 'text-cash-600'}`}>
-                        {isExp ? '-' : '+'}{formatMoney(tx.amount)}
-                    </div>
-                </div>
-            )
-        };
-
-        const MethodCard = ({ method, amount, pct }) => {
-            const m = METHODS[method];
-            return (
-                <div className="bg-white p-5 rounded-2xl shadow-sm border border-base-100 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center text-xl ${m.bg} ${m.color}`}>
-                            <i className={`fa-solid ${m.icon}`}></i>
+                    <div className="flex items-center gap-3">
+                        <div className={`text-base font-bold font-num ${isExp ? 'text-base-800' : 'text-emerald-600'}`}>
+                            {isExp ? '-' : '+'}{formatMoney(tx.amount)}
                         </div>
-                        <div>
-                            <div className="text-sm font-bold text-base-800">{m.label}</div>
-                            <div className="w-24 h-1.5 bg-base-100 rounded-full mt-2 overflow-hidden">
-                                <div style={{width: `${pct}%`}} className={`h-full rounded-full ${m.color.replace('text', 'bg')}`}></div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="text-right">
-                        <div className="text-lg font-bold text-base-800 num-font">${formatMoney(amount)}</div>
-                        <div className="text-xs text-base-400 font-bold">{pct}%</div>
+                        {onDelete && (
+                            <button onClick={(e) => {e.stopPropagation(); if(confirm('刪除?')) onDelete(tx.id)}} className="text-base-200 hover:text-rose-500 px-1">
+                                <i className="fa-solid fa-xmark text-xs"></i>
+                            </button>
+                        )}
                     </div>
                 </div>
             );
@@ -281,50 +375,37 @@
             const [amount, setAmount] = useState('');
             const [method, setMethod] = useState(mode === 'income' ? 'cash' : '');
             const [cat, setCat] = useState('');
-            const [date, setDate] = useState(getToday());
-
-            const cats = mode === 'income' 
-                ? ['薪資', '獎金', '投資', '其他'] 
-                : ['飲食', '交通', '購物', '娛樂', '居家', '其他'];
-
-            const handleSubmit = () => {
+            const cats = mode === 'income' ? ['薪資','獎金','投資','其他'] : ['飲食','交通','購物','娛樂','居家','其他'];
+            
+            const submit = () => {
                 if(!amount) return;
-                if(mode === 'expense' && !method) { alert('請選擇支付方式'); return; }
-                onSave({
-                    id: Date.now(),
-                    date,
-                    amount: parseFloat(amount),
-                    type: mode,
-                    method,
-                    category: cat || '其他'
-                });
+                if(mode==='expense' && !method) return;
+                onSave({ id: Date.now(), date: getToday(), amount: parseFloat(amount), type: mode, method: mode==='income'?'cash':method, category: cat||'其他' });
                 onClose();
             };
 
             return (
-                <div className="fixed inset-0 z-50 flex flex-col justify-end">
+                <div className="fixed inset-0 z-[100] flex flex-col justify-end">
                     <div className="absolute inset-0 bg-base-900/30 backdrop-blur-sm" onClick={onClose}></div>
-                    <div className="bg-white rounded-t-3xl p-6 w-full animate-slide-up relative z-10 safe-bottom">
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="text-lg font-bold text-base-800">{mode === 'income' ? '記進帳' : '記支出'}</h3>
-                            <input type="date" value={date} onChange={e => setDate(e.target.value)} className="bg-base-100 text-xs font-bold px-2 py-1 rounded text-base-500 outline-none"/>
+                    <div className="bg-white rounded-t-3xl p-6 w-full animate-slide-up relative z-10 safe-bottom shadow-2xl">
+                        <div className="flex justify-between mb-8">
+                            <span className="text-lg font-bold text-base-800">{mode==='income'?'進帳':'支出'}</span>
+                            <button onClick={onClose}><i className="fa-solid fa-xmark text-base-400 text-xl"></i></button>
                         </div>
                         
-                        <div className="mb-6 relative text-center">
-                            <span className="text-2xl font-bold text-base-300 absolute top-2 left-4">$</span>
-                            <input type="number" value={amount} onChange={e => setAmount(e.target.value)} autoFocus placeholder="0"
-                                className="w-full text-center text-5xl font-bold text-base-800 outline-none bg-transparent num-font placeholder-base-200" />
+                        <div className="flex justify-center mb-8 relative">
+                            <span className="text-2xl text-base-300 absolute left-8 top-2">$</span>
+                            <input autoFocus type="number" value={amount} onChange={e=>setAmount(e.target.value)} placeholder="0" className="text-5xl font-bold text-center w-full outline-none font-num text-base-800 bg-transparent placeholder-base-100"/>
                         </div>
 
                         {mode === 'expense' && (
                             <div className="mb-6">
-                                <label className="text-xs font-bold text-base-400 uppercase tracking-widest mb-3 block text-center">支付方式</label>
-                                <div className="grid grid-cols-3 gap-3">
-                                    {['cash', 'mobile', 'card'].map(k => (
-                                        <button key={k} onClick={() => setMethod(k)}
-                                            className={`py-3 rounded-xl flex flex-col items-center gap-1 border-2 transition-all ${method === k ? METHODS[k].bg + ' ' + METHODS[k].border + ' ' + METHODS[k].color : 'border-transparent bg-base-50 text-base-400'}`}>
-                                            <i className={`fa-solid ${METHODS[k].icon}`}></i>
-                                            <span className="text-xs font-bold">{METHODS[k].label}</span>
+                                <div className="text-xs font-bold text-base-300 uppercase tracking-widest text-center mb-3">Payment</div>
+                                <div className="flex justify-center gap-3">
+                                    {['cash','mobile','card'].map(k => (
+                                        <button key={k} onClick={() => setMethod(k)} className={`w-16 h-16 rounded-2xl flex flex-col items-center justify-center gap-1 border-2 transition-all ${method===k ? METHODS[k].border+' '+METHODS[k].bg+' '+METHODS[k].color : 'border-base-100 text-base-300'}`}>
+                                            <i className={`fa-solid ${METHODS[k].icon} text-lg`}></i>
+                                            <span className="text-[10px] font-bold">{METHODS[k].label}</span>
                                         </button>
                                     ))}
                                 </div>
@@ -332,69 +413,39 @@
                         )}
 
                         <div className="mb-8">
-                            <label className="text-xs font-bold text-base-400 uppercase tracking-widest mb-3 block text-center">分類</label>
-                            <div className="flex flex-wrap gap-2 justify-center">
+                            <div className="text-xs font-bold text-base-300 uppercase tracking-widest text-center mb-3">Category</div>
+                            <div className="flex flex-wrap justify-center gap-2">
                                 {cats.map(c => (
-                                    <button key={c} onClick={() => setCat(c)} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${cat === c ? 'bg-base-800 text-white' : 'bg-base-100 text-base-500'}`}>
-                                        {c}
-                                    </button>
+                                    <button key={c} onClick={() => setCat(c)} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${cat===c ? 'bg-base-800 text-white' : 'bg-base-100 text-base-400'}`}>{c}</button>
                                 ))}
                             </div>
                         </div>
 
-                        <button onClick={handleSubmit} className={`w-full py-4 rounded-xl text-white font-bold text-lg shadow-lg active:scale-95 transition-transform ${mode === 'income' ? 'bg-cash-500' : 'bg-base-800'}`}>
-                            確認{mode === 'income' ? '進帳' : '支出'}
-                        </button>
+                        <button onClick={submit} className={`w-full py-4 rounded-xl text-white font-bold text-lg active:scale-95 transition-transform ${mode==='income'?'bg-emerald-500':'bg-base-800'}`}>確認</button>
                     </div>
                 </div>
             );
         };
 
-        // --- Main App ---
+        // --- App Root ---
         const App = () => {
-            const [page, setPage] = useState('home'); // home, calendar, analysis
+            const [page, setPage] = useState('home'); // home, journal, insight, calendar, vault
             const [txs, setTxs] = useState([]);
-            const [modalMode, setModalMode] = useState(null); // 'income', 'expense', null
-            const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
+            const [addMode, setAddMode] = useState(null);
 
-            useEffect(() => {
-                const data = localStorage.getItem(DB_KEY);
-                if(data) setTxs(JSON.parse(data));
-            }, []);
-
-            const handleSave = (newTx) => {
-                const updated = [newTx, ...txs];
-                setTxs(updated);
-                localStorage.setItem(DB_KEY, JSON.stringify(updated));
-            };
-
-            const balance = useMemo(() => {
-                return txs.reduce((acc, t) => t.type === 'income' ? acc + t.amount : acc - t.amount, 0);
-            }, [txs]);
-
-            const NavBtn = ({ id, icon, label }) => (
-                <button onClick={() => setPage(id)} className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 ${page === id ? 'text-base-800' : 'text-base-400'}`}>
-                    <i className={`fa-solid ${icon} text-xl mb-0.5 ${page === id ? 'animate-bounce' : ''}`}></i>
-                    <span className="text-[10px] font-bold">{label}</span>
-                </button>
-            );
+            useEffect(() => { const d = localStorage.getItem(DB_KEY); if(d) setTxs(JSON.parse(d)); }, []);
+            const save = (t) => { const n = [t,...txs]; setTxs(n); localStorage.setItem(DB_KEY, JSON.stringify(n)); };
+            const del = (id) => { const n = txs.filter(t=>t.id!==id); setTxs(n); localStorage.setItem(DB_KEY, JSON.stringify(n)); };
 
             return (
-                <div className="h-full flex flex-col bg-base-50">
-                    <div className="flex-1 overflow-hidden relative">
-                        {page === 'home' && <HomePage balance={balance} recentTx={txs.slice(0,5)} onOpenAdd={setModalMode} />}
-                        {page === 'calendar' && <CalendarPage transactions={txs} currentMonth={currentMonth} setCurrentMonth={setCurrentMonth} />}
-                        {page === 'analysis' && <AnalysisPage transactions={txs} currentMonth={currentMonth} />}
-                    </div>
-
-                    {/* Bottom Navigation */}
-                    <div className="h-[80px] bg-white border-t border-base-200 flex items-start pt-2 safe-bottom z-40">
-                        <NavBtn id="home" icon="fa-house" label="首頁" />
-                        <NavBtn id="calendar" icon="fa-calendar-days" label="月曆" />
-                        <NavBtn id="analysis" icon="fa-chart-pie" label="分析" />
-                    </div>
-
-                    {modalMode && <AddModal mode={modalMode} onClose={() => setModalMode(null)} onSave={handleSave} />}
+                <div className="h-full w-full bg-base-50 text-base-800">
+                    {page === 'home' && <HomeLobby onNavigate={setPage} />}
+                    {page === 'journal' && <JournalPage transactions={txs} onBack={()=>setPage('home')} onOpenAdd={setAddMode} onDelete={del} />}
+                    {page === 'insight' && <InsightPage transactions={txs} onBack={()=>setPage('home')} />}
+                    {page === 'calendar' && <CalendarPage transactions={txs} onBack={()=>setPage('home')} />}
+                    {page === 'vault' && <VaultPage transactions={txs} onBack={()=>setPage('home')} />}
+                    
+                    {addMode && <AddModal mode={addMode} onClose={()=>setAddMode(null)} onSave={save} />}
                 </div>
             );
         };

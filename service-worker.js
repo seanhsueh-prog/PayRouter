@@ -1,8 +1,7 @@
-const CACHE_NAME = 'cfs-cache-v1.1'; // 更新為 v1.1
+const CACHE_NAME = 'cfs-cache-v1.2'; // 升級為 v1.2
 
-// 定義需要快取的資源
 const ASSETS_TO_CACHE = [
-  './CashFlowSense_v1.1.html', // 鎖定 v1.1 主程式
+  './CashFlowSense_v1.2.html', // 鎖定 v1.2 主程式
   './manifest.json',
   // 外部 CDN 資源
   'https://cdn.tailwindcss.com',
@@ -12,9 +11,9 @@ const ASSETS_TO_CACHE = [
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
 ];
 
-// 1. 安裝階段
+// 1. 安裝階段 (Install)
 self.addEventListener('install', (event) => {
-  self.skipWaiting();
+  self.skipWaiting(); // 強制跳過等待，讓新版 SW 立刻生效
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS_TO_CACHE);
@@ -22,11 +21,12 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// 2. 啟動階段 (清理舊版)
+// 2. 啟動階段 (Activate) - 清理舊版
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => Promise.all(
       keys.map((key) => {
+        // 只要不是 v1.2 的快取，全部刪除
         if (key !== CACHE_NAME) {
           return caches.delete(key);
         }
@@ -35,10 +35,11 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// 3. 請求攔截
+// 3. 請求攔截 (Fetch)
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
+  // 策略 A: 針對 HTML 檔案 -> Network First (網路優先)
   if (url.pathname.endsWith('.html') || url.pathname.endsWith('/')) {
     event.respondWith(
       fetch(event.request)
@@ -47,9 +48,12 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
           return res;
         })
-        .catch(() => caches.match(event.request))
+        .catch(() => {
+          return caches.match(event.request);
+        })
     );
   } else {
+    // 策略 B: 針對靜態資源 -> Cache First (快取優先)
     event.respondWith(
       caches.match(event.request).then(res => res || fetch(event.request))
     );
