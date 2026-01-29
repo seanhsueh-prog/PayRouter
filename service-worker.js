@@ -1,11 +1,11 @@
-const CACHE_NAME = 'cfs-cache-v3.0'; // 升級 v3.0
+const CACHE_NAME = 'cfs-cache-v3.1'; // 升級 v3.1，強制清除舊版快取
 
 const ASSETS_TO_CACHE = [
   './index.html',         // 唯一入口
   './manifest.json',
   './icons/icon-192.png', // 實體存在的 Icon
   './icons/icon-512.png',
-  // 外部資源
+  // 外部資源 (CDN)
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/react@18/umd/react.production.min.js',
   'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js',
@@ -28,7 +28,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => Promise.all(
       keys.map((key) => {
-        // 只要不是 v3.0 的快取，全部刪除
+        // 只要不是 v3.1 的快取，全部刪除
         if (key !== CACHE_NAME) {
           return caches.delete(key);
         }
