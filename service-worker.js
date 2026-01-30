@@ -1,11 +1,11 @@
-const CACHE_NAME = 'cfs-cache-v3.2'; // 升級 v3.2 (Powder Blue)
+const CACHE_NAME = 'cfs-cache-v3.3'; // 升級 v3.3 Final
 
 const ASSETS_TO_CACHE = [
-  './index.html',         // 唯一入口
+  './index.html',
   './manifest.json',
-  './icons/icon-192.png', // 實體存在的 Icon
+  './icons/icon-192.png',
   './icons/icon-512.png',
-  // 外部資源
+  // 外部 CDN 資源
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/react@18/umd/react.production.min.js',
   'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js',
@@ -28,7 +28,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => Promise.all(
       keys.map((key) => {
-        // 只要不是 v3.2 的快取，全部刪除
+        // 只要不是 v3.3 的快取，全部刪除
         if (key !== CACHE_NAME) {
           return caches.delete(key);
         }
