@@ -1,11 +1,11 @@
-const CACHE_NAME = 'cfs-cache-v3.5'; // 升級 v3.5 (Powder Blue Restoration)
+const CACHE_NAME = 'cfs-cache-v3.5-final'; // 強制更新至 v3.5 最終版
 
 const ASSETS_TO_CACHE = [
   './index.html',         // 唯一入口
   './manifest.json',
   './icons/icon-192.png', // 實體存在的 Icon
   './icons/icon-512.png',
-  // 外部資源
+  // 外部依賴資源 (CDN)
   'https://cdn.tailwindcss.com',
   'https://unpkg.com/react@18/umd/react.production.min.js',
   'https://unpkg.com/react-dom@18/umd/react-dom.production.min.js',
@@ -23,12 +23,12 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// 2. 啟動階段 (Activate) - 清理舊版
+// 2. 啟動階段 (Activate) - 清理舊版快取
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => Promise.all(
       keys.map((key) => {
-        // 只要不是 v3.5 的快取，全部刪除
+        // 只要不是 v3.5-final 的快取，全部刪除
         if (key !== CACHE_NAME) {
           return caches.delete(key);
         }
