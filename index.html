@@ -18,32 +18,38 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- 視覺系統 v3.4: Refined Powder Blue -->
+    <!-- Tailwind Config v3.4 -->
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        base: { 50: '#F8FAFC', 100: '#F1F5F9', 200: '#E2E8F0', 800: '#1E293B' },
-                        // 功能色 (Morandi)
-                        journal: '#64748B', 
-                        insight: '#0EA5E9', 
-                        calendar: '#10B981', 
-                        vault: '#F43F5E',
+                        base: { 50: '#F8FAFC', 100: '#F1F5F9', 200: '#E2E8F0', 300: '#CBD5E1', 800: '#1E293B', 900: '#0F172A' },
+                        // 功能色系 (Rose / Emerald / Sky / Violet)
+                        rose: { 50: '#FFF1F2', 100: '#FFE4E6', 500: '#F43F5E', 600: '#E11D48' },
+                        emerald: { 50: '#ECFDF5', 100: '#D1FAE5', 500: '#10B981', 600: '#059669' },
+                        sky: { 50: '#F0F9FF', 100: '#E0F2FE', 500: '#0EA5E9', 600: '#0284C7' },
+                        violet: { 50: '#F5F3FF', 100: '#EDE9FE', 500: '#8B5CF6', 600: '#7C3AED' },
                     },
                     boxShadow: {
-                        'powder': '0 10px 25px -5px rgba(186, 230, 253, 0.5), 0 8px 10px -6px rgba(186, 230, 253, 0.2)',
-                        'float': '0 20px 40px -10px rgba(14, 165, 233, 0.15)',
+                        'soft': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)',
+                        'glow-rose': '0 0 15px rgba(244, 63, 94, 0.3)',
+                        'glow-emerald': '0 0 15px rgba(16, 185, 129, 0.3)',
+                        'float': '0 10px 30px -10px rgba(0, 0, 0, 0.1)',
                     },
                     animation: {
                         'fade-in': 'fadeIn 0.4s ease-out',
                         'slide-up': 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                        'pop': 'pop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                     },
                     keyframes: {
                         fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
-                        slideUp: { '0%': { transform: 'translateY(100%)' }, '100%': { transform: 'translateY(0)' } }
+                        slideUp: { '0%': { transform: 'translateY(100%)' }, '100%': { transform: 'translateY(0)' } },
+                        pop: { '0%': { transform: 'scale(0.95)' }, '100%': { transform: 'scale(1)' } }
                     },
-                    fontFamily: { 'num': ['SF Pro Display', 'Roboto', 'sans-serif'] }
+                    fontFamily: {
+                        'num': ['SF Pro Display', 'Roboto', 'sans-serif']
+                    }
                 }
             }
         }
@@ -55,8 +61,21 @@
         .safe-top { padding-top: env(safe-area-inset-top); }
         .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        .glass-panel { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255, 255, 255, 0.4); }
-        .murmur-glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.6); box-shadow: 0 8px 32px 0 rgba(186, 230, 253, 0.2); }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+        }
+
+        .murmur-glass {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 8px 32px 0 rgba(100, 116, 139, 0.1);
+        }
     </style>
 </head>
 <body>
@@ -67,25 +86,6 @@
         const DB_KEY = 'cfs_db_v1';
         const NOTE_KEY = 'cfs_notes_v1';
 
-        // --- Config ---
-        const METHODS = {
-            cash: { id: 'cash', label: '現金', painType: 'solid', color: 'text-emerald-700', bg: 'bg-emerald-100', bar: 'bg-emerald-600', icon: 'fa-coins' },
-            mobile: { id: 'mobile', label: '行動', painType: 'ghost', color: 'text-sky-600', bg: 'bg-sky-100', bar: 'bg-gradient-to-r from-sky-400 to-sky-200', icon: 'fa-mobile-screen' },
-            card: { id: 'card', label: '信用卡', painType: 'ghost', color: 'text-rose-500', bg: 'bg-rose-50', bar: 'bg-gradient-to-r from-rose-400 to-rose-200', icon: 'fa-credit-card' },
-            bank: { id: 'bank', label: '轉帳', painType: 'solid', color: 'text-slate-600', bg: 'bg-slate-100', bar: 'bg-slate-500', icon: 'fa-building-columns' }
-        };
-
-        const CATS_EXP = [
-            {id:'飲食', icon:'fa-utensils'}, {id:'交通', icon:'fa-train-subway'}, {id:'居家', icon:'fa-house'}, 
-            {id:'購物', icon:'fa-bag-shopping'}, {id:'娛樂', icon:'fa-gamepad'}, {id:'醫療', icon:'fa-pills'},
-            {id:'教育', icon:'fa-graduation-cap'}, {id:'社交', icon:'fa-gift'}, {id:'美妝', icon:'fa-wand-magic-sparkles'},
-            {id:'3C', icon:'fa-mobile'}, {id:'車輛', icon:'fa-car'}, {id:'寵物', icon:'fa-paw'}
-        ];
-        const CATS_INC = [
-            {id:'薪資', icon:'fa-briefcase'}, {id:'獎金', icon:'fa-award'}, {id:'投資', icon:'fa-chart-line'},
-            {id:'兼職', icon:'fa-laptop-code'}, {id:'其他', icon:'fa-box-open'}
-        ];
-
         // --- Utils ---
         const getToday = () => new Date().toISOString().split('T')[0];
         const formatMoney = (n) => new Intl.NumberFormat('en-US').format(n);
@@ -94,32 +94,48 @@
             const lastDay = new Date(year, month, 0);
             let days = [];
             for(let i=0; i<firstDay.getDay(); i++) days.push(null);
-            for(let i=1; i<=lastDay.getDate(); i++) days.push({ day: i, dateStr: `${year}-${String(month).padStart(2,'0')}-${String(i).padStart(2,'0')}` });
+            for(let i=1; i<=lastDay.getDate(); i++) {
+                days.push({ day: i, dateStr: `${year}-${String(month).padStart(2,'0')}-${String(i).padStart(2,'0')}` });
+            }
             return days;
+        };
+
+        // --- Config v3.4 ---
+        const METHODS = {
+            cash: { id: 'cash', label: '現金', painType: 'solid', color: 'text-emerald-600', bg: 'bg-emerald-50', bar: 'bg-emerald-500', icon: 'fa-coins' },
+            mobile: { id: 'mobile', label: '行動支付', painType: 'ghost', color: 'text-sky-600', bg: 'bg-sky-50', bar: 'bg-sky-500', icon: 'fa-mobile-screen' },
+            card: { id: 'card', label: '信用卡', painType: 'ghost', color: 'text-rose-600', bg: 'bg-rose-50', bar: 'bg-rose-500', icon: 'fa-credit-card' },
+            transfer: { id: 'transfer', label: '轉帳', painType: 'solid', color: 'text-violet-600', bg: 'bg-violet-50', bar: 'bg-violet-500', icon: 'fa-money-bill-transfer' } // New
+        };
+
+        // 完整分類清單 v3.4
+        const CATEGORIES = {
+            expense: ['飲食', '交通', '居家', '購物', '娛樂', '醫療', '教育', '社交', '美妝', '3C', '車輛', '寵物'],
+            income: ['薪資', '獎金', '投資', '兼職', '其他']
         };
 
         // --- Components ---
 
-        // 1. Home Lobby (v3.4 Restored Center Axis)
-        const HomeLobby = ({ onNavigate, onOpenMurmur, onOpenSettings, noteCount }) => {
+        // 1. Home Lobby (v3.4 Refined Spacing & Header)
+        const HomeLobby = ({ onNavigate, onOpenMurmur, noteCount }) => {
             return (
                 <div className="h-full flex flex-col p-6 animate-fade-in relative bg-base-50">
-                    {/* Header: Pure, Center, No Box */}
-                    <div className="safe-top pt-10 pb-8 flex flex-col items-center justify-center relative">
-                        {/* Settings Gear (Subtle) */}
-                        <button onClick={onOpenSettings} className="absolute right-0 top-12 text-base-300 hover:text-base-800 transition-colors p-2">
-                            <i className="fa-solid fa-gear text-lg"></i>
-                        </button>
-
+                    {/* Header: Pure Center, No Card Background */}
+                    <div className="safe-top pt-10 pb-8 flex flex-col items-center justify-center">
                         <div className="w-20 h-20 rounded-3xl overflow-hidden mb-4 shadow-lg active:scale-95 transition-transform">
                             <img src="./icons/icon-192.png" alt="Logo" className="w-full h-full object-cover" />
                         </div>
-                        <h1 className="text-lg font-bold text-base-800 tracking-wider">CASH FLOW SENSE</h1>
-                        <span className="text-[10px] text-base-400 font-bold tracking-[0.2em] mt-1 opacity-60">v3.4 FINAL</span>
+                        <h1 className="text-xl font-bold text-base-800 tracking-wider">CASH FLOW SENSE</h1>
+                        <span className="text-[10px] text-base-400 font-bold tracking-[0.3em] mt-1 opacity-70">v3.4 PRO</span>
+                        
+                        {/* Settings Gear (Subtle) */}
+                        <button className="absolute top-10 right-6 text-base-300 hover:text-base-500 p-2">
+                            <i className="fa-solid fa-gear"></i>
+                        </button>
                     </div>
 
-                    {/* Matrix: Restored Proportions (Aspect 4/3) */}
-                    <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-5 pb-24 content-start">
+                    {/* Matrix: Wider Gap (gap-6) */}
+                    <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-6 pb-24">
                         <LobbyCard id="journal" title="日常" sub="Entry" icon="fa-pen-nib" theme="stone" onClick={()=>onNavigate('journal')} />
                         <LobbyCard id="insight" title="透視" sub="Insight" icon="fa-chart-pie" theme="sky" onClick={()=>onNavigate('insight')} />
                         <LobbyCard id="calendar" title="紀錄" sub="Record" icon="fa-regular fa-calendar" theme="emerald" onClick={()=>onNavigate('calendar')} />
@@ -128,12 +144,12 @@
 
                     {/* Murmur Glass Capsule */}
                     <div className="fixed bottom-8 left-6 right-6 safe-bottom z-30">
-                        <button onClick={onOpenMurmur} className="w-full murmur-glass rounded-2xl py-4 flex items-center justify-between px-6 active:scale-[0.98] transition-all hover:shadow-lg">
+                        <button onClick={onOpenMurmur} className="w-full murmur-glass rounded-2xl py-4 flex items-center justify-between px-6 active:scale-[0.98] transition-all shadow-sm hover:shadow-md border border-white/50">
                             <div className="flex flex-col items-start">
-                                <span className="text-base-800 text-sm font-bold tracking-wide">隨記 Memo...</span>
+                                <span className="text-base-600 text-sm font-bold tracking-wide">隨記 Memo...</span>
                                 {noteCount > 0 && <span className="text-[10px] text-sky-500 font-bold mt-0.5">已有 {noteCount} 則隨記</span>}
                             </div>
-                            <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-sky-500 shadow-sm">
+                            <div className="w-10 h-10 rounded-full bg-base-100 flex items-center justify-center text-base-500">
                                 <i className="fa-solid fa-microphone"></i>
                             </div>
                         </button>
@@ -142,21 +158,24 @@
             );
         };
 
-        const LobbyCard = ({ title, sub, icon, theme, onClick, isVault }) => {
-            const themes = { stone: 'text-slate-600', sky: 'text-sky-500', emerald: 'text-emerald-500', rose: 'text-rose-500' };
-            // Aspect ratio constraint to prevent "Giant" look
+        const LobbyCard = ({ id, title, sub, icon, theme, onClick, isVault }) => {
+            const themes = {
+                stone: 'text-slate-600 bg-slate-50',
+                sky: 'text-sky-600 bg-sky-50',
+                emerald: 'text-emerald-600 bg-emerald-50',
+                rose: 'text-rose-600 bg-rose-50'
+            };
             return (
-                <button onClick={onClick} className="group relative bg-white rounded-[1.8rem] shadow-powder p-5 flex flex-col justify-between items-start transition-all active:scale-[0.96] border border-white/60 overflow-hidden hover:shadow-float aspect-[4/3]">
-                    <div className={`absolute -right-4 -top-4 w-20 h-20 rounded-full opacity-10 blur-xl bg-current ${themes[theme]}`}></div>
-                    <div className={`w-9 h-9 rounded-full bg-base-50 flex items-center justify-center ${themes[theme]} z-10 shadow-inner text-sm`}>
-                        <i className={`fa-solid ${icon}`}></i>
+                <button onClick={onClick} className="group relative bg-white rounded-[1.8rem] shadow-soft p-5 flex flex-col justify-between items-start transition-all active:scale-[0.96] border border-white/60 overflow-hidden hover:shadow-lg">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${themes[theme]} z-10 mb-4`}>
+                        <i className={`fa-solid ${icon} text-lg`}></i>
                     </div>
-                    <div className="z-10 w-full text-left mt-2">
-                        <div className="text-[10px] text-base-300 font-bold uppercase tracking-wider mb-0.5">{sub}</div>
+                    <div className="z-10 w-full text-left">
+                        <div className="text-[10px] text-base-300 font-bold uppercase tracking-wider mb-1">{sub}</div>
                         {isVault ? (
                             <div className="flex justify-between items-end w-full">
                                 <div className="text-lg font-bold text-base-800">{title}</div>
-                                <i className="fa-solid fa-lock text-[10px] text-base-200 mb-1"></i>
+                                <i className="fa-solid fa-lock text-xs text-base-300 mb-1"></i>
                             </div>
                         ) : (
                             <div className="text-lg font-bold text-base-800">{title}</div>
@@ -166,19 +185,19 @@
             )
         };
 
-        // 2. Page Container (With Search & Settings Support)
+        // 2. Page Container
         const PageContainer = ({ title, onBack, children, extraIcon, onExtraClick, noScroll }) => (
             <div className="h-full flex flex-col bg-base-50 animate-fade-in">
                 <div className="safe-top glass-panel sticky top-0 z-50 flex-none">
                     <div className="h-[60px] flex items-center justify-between px-4">
-                        <button onClick={onBack} className="bg-base-800 text-white rounded-full px-4 py-2 flex items-center gap-2 active:scale-90 transition-transform shadow-md hover:bg-base-900">
+                        <button onClick={onBack} className="bg-white border border-base-200 text-base-600 rounded-full px-4 py-2 flex items-center gap-2 active:scale-90 transition-transform shadow-sm">
                             <i className="fa-solid fa-arrow-left text-xs"></i>
                             <span className="text-xs font-bold">返回</span>
                         </button>
                         <span className="text-base font-bold text-base-800 tracking-wide">{title}</span>
                         <div className="w-16 flex justify-end">
                             {extraIcon && (
-                                <button onClick={onExtraClick} className="w-10 h-10 rounded-full bg-white/50 flex items-center justify-center text-base-800 active:bg-base-200 shadow-sm transition-colors hover:bg-white">
+                                <button onClick={onExtraClick} className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-base-600 active:bg-base-100 border border-base-200 shadow-sm">
                                     <i className={`fa-solid ${extraIcon}`}></i>
                                 </button>
                             )}
@@ -191,148 +210,59 @@
             </div>
         );
 
-        // 3. Settings Modal (Backup/Restore)
-        const SettingsModal = ({ onClose, getAllData, restoreData, onReset }) => {
-            const handleBackup = () => {
-                const data = getAllData();
-                const blob = new Blob([JSON.stringify(data)], {type: "application/json"});
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `CFS_Backup_${getToday()}.json`;
-                a.click();
-            };
-            const handleRestore = (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    try {
-                        const data = JSON.parse(event.target.result);
-                        if(confirm('確定還原？這將覆蓋現有資料。')) { restoreData(data); onClose(); alert('還原成功'); }
-                    } catch(e) { alert('檔案格式錯誤'); }
-                };
-                reader.readAsText(file);
-            };
-
-            return (
-                <div className="fixed inset-0 z-[200] flex flex-col justify-end">
-                    <div className="absolute inset-0 bg-base-900/30 backdrop-blur-sm" onClick={onClose}></div>
-                    <div className="bg-white rounded-t-3xl p-6 w-full animate-slide-up relative z-10 safe-bottom">
-                        <div className="flex justify-between items-center mb-6">
-                            <h3 className="font-bold text-lg text-base-800">設定 Settings</h3>
-                            <button onClick={onClose}><i className="fa-solid fa-xmark text-base-400"></i></button>
+        // 3. Journal Page
+        const JournalPage = ({ transactions, onBack, onOpenAdd, onDelete }) => (
+            <PageContainer title="日常 Journal" onBack={onBack}>
+                <div className="px-5 pt-4 pb-24">
+                    <div className="text-xs font-bold text-base-400 mb-4 px-1">近期流水</div>
+                    {transactions.length === 0 ? (
+                        <div className="py-20 text-center opacity-40">
+                            <i className="fa-solid fa-pen-nib text-4xl mb-3 text-base-300"></i>
+                            <p className="text-sm text-base-400">尚無紀錄</p>
                         </div>
-                        <div className="space-y-3">
-                            <button onClick={handleBackup} className="w-full bg-base-50 p-4 rounded-xl flex items-center gap-4 text-base-800 font-bold active:bg-base-100">
-                                <div className="w-10 h-10 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center"><i className="fa-solid fa-download"></i></div>
-                                備份資料 (Backup)
-                            </button>
-                            <label className="w-full bg-base-50 p-4 rounded-xl flex items-center gap-4 text-base-800 font-bold active:bg-base-100 cursor-pointer">
-                                <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center"><i className="fa-solid fa-upload"></i></div>
-                                還原資料 (Restore)
-                                <input type="file" className="hidden" accept=".json" onChange={handleRestore} />
-                            </label>
-                            <div className="h-px bg-base-100 my-2"></div>
-                            <button onClick={onReset} className="w-full bg-rose-50 p-4 rounded-xl flex items-center gap-4 text-rose-600 font-bold active:bg-rose-100">
-                                <div className="w-10 h-10 rounded-full bg-rose-100 text-rose-500 flex items-center justify-center"><i className="fa-solid fa-trash"></i></div>
-                                重置所有資料
-                            </button>
-                        </div>
-                        <div className="mt-6 text-center text-xs text-base-300">CashFlow Sense v3.4</div>
-                    </div>
+                    ) : (
+                        transactions.slice(0, 20).map(t => <TxItem key={t.id} tx={t} onDelete={onDelete} />)
+                    )}
                 </div>
-            );
-        };
-
-        // 4. Search Modal
-        const SearchModal = ({ transactions, onClose }) => {
-            const [term, setTerm] = useState('');
-            const results = useMemo(() => {
-                if(!term) return [];
-                return transactions.filter(t => 
-                    t.category.includes(term) || (t.method && METHODS[t.method].label.includes(term)) || t.amount.toString().includes(term)
-                );
-            }, [term, transactions]);
-
-            return (
-                <div className="fixed inset-0 z-[100] bg-white flex flex-col animate-fade-in">
-                    <div className="safe-top p-4 border-b border-base-100 flex items-center gap-3">
-                        <div className="flex-1 bg-base-50 rounded-xl flex items-center px-3 h-10">
-                            <i className="fa-solid fa-magnifying-glass text-base-400 mr-2"></i>
-                            <input autoFocus value={term} onChange={e=>setTerm(e.target.value)} placeholder="搜尋類別、金額..." className="bg-transparent w-full outline-none text-base-800 font-bold placeholder-base-300 text-sm"/>
-                        </div>
-                        <button onClick={onClose} className="text-base-400 font-bold text-sm">取消</button>
-                    </div>
-                    <div className="flex-1 overflow-y-auto p-4">
-                        {term && results.length === 0 && <div className="text-center text-base-300 mt-10 text-xs">無相符紀錄</div>}
-                        {results.map(t => <TxItem key={t.id} tx={t} />)}
-                    </div>
+                <div className="fixed bottom-8 right-6 safe-bottom z-50 flex flex-col gap-4">
+                    <button onClick={() => onOpenAdd('income')} className="w-14 h-14 rounded-full bg-emerald-500 shadow-glow-emerald text-white flex items-center justify-center active:scale-90 transition-transform">
+                        <i className="fa-solid fa-plus text-xl"></i>
+                    </button>
+                    <button onClick={() => onOpenAdd('expense')} className="w-14 h-14 rounded-full bg-rose-500 shadow-glow-rose text-white flex items-center justify-center active:scale-90 transition-transform">
+                        <i className="fa-solid fa-minus text-xl"></i>
+                    </button>
                 </div>
-            );
-        };
+            </PageContainer>
+        );
 
-        // 5. Shared Logic
-        const TxItem = ({ tx, onDelete }) => {
-            const m = METHODS[tx.method] || METHODS.cash; const isExp = tx.type === 'expense';
-            return (
-                <div className="flex justify-between items-center py-3 border-b border-base-200 last:border-0 animate-fade-in">
-                    <div className="flex items-center gap-3">
-                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm ${isExp ? m.bg + ' ' + m.color : 'bg-emerald-50 text-emerald-600'}`}><i className={`fa-solid ${isExp ? m.icon : 'fa-arrow-down'}`}></i></div>
-                        <div><div className="text-sm font-bold text-base-800">{tx.category}</div><div className="text-[10px] text-base-400">{tx.date.slice(5)} · {isExp ? m.label : '收入'}</div></div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <div className={`text-base font-bold font-num ${isExp ? 'text-base-800' : 'text-emerald-600'}`}>{isExp ? '-' : '+'}{formatMoney(tx.amount)}</div>
-                        {onDelete && <button onClick={(e) => {e.stopPropagation(); if(confirm('刪除?')) onDelete(tx.id)}} className="text-base-200 hover:text-rose-500 px-1"><i className="fa-solid fa-xmark text-xs"></i></button>}
-                    </div>
-                </div>
-            );
-        };
-
-        // 6. Pages
-        const JournalPage = ({ transactions, onBack, onOpenAdd, onDelete }) => {
-            const [filter, setFilter] = useState('all'); // all, income, expense
-            const displayTx = transactions.filter(t => filter==='all' ? true : t.type === filter).slice(0,30);
-            
-            return (
-                <PageContainer title="日常 Journal" onBack={onBack}>
-                    <div className="sticky top-0 bg-base-50 z-10 px-5 pt-2 pb-2">
-                        <div className="bg-white p-1 rounded-xl flex shadow-sm border border-base-100">
-                            {['all','income','expense'].map(f => (
-                                <button key={f} onClick={()=>setFilter(f)} className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${filter===f ? 'bg-base-800 text-white shadow' : 'text-base-400'}`}>
-                                    {f==='all'?'全部':f==='income'?'收入':'支出'}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="px-5 pb-24">
-                        {displayTx.length === 0 ? <div className="py-20 text-center opacity-40"><i className="fa-solid fa-pen-nib text-4xl mb-3 text-base-300"></i><p className="text-sm text-base-400">尚無紀錄</p></div> : displayTx.map(t => <TxItem key={t.id} tx={t} onDelete={onDelete} />)}
-                    </div>
-                    <div className="fixed bottom-8 right-6 safe-bottom z-50 flex flex-col gap-3">
-                        <button onClick={() => onOpenAdd('income')} className="w-12 h-12 rounded-full bg-white shadow-powder text-emerald-600 flex items-center justify-center active:scale-90 transition-transform border border-white"><i className="fa-solid fa-plus"></i></button>
-                        <button onClick={() => onOpenAdd('expense')} className="w-14 h-14 rounded-full bg-base-800 shadow-float text-white flex items-center justify-center active:scale-90 transition-transform"><i className="fa-solid fa-minus text-xl"></i></button>
-                    </div>
-                </PageContainer>
-            );
-        };
-
+        // 4. Insight Page
         const InsightPage = ({ transactions, onBack }) => {
             const [mode, setMode] = useState('method');
             const [year, setYear] = useState(new Date().getFullYear());
             const [month, setMonth] = useState(new Date().getMonth() + 1);
-            
-            const stats = useMemo(() => {
-                const target = `${year}-${String(month).padStart(2,'0')}`;
-                const filtered = transactions.filter(t => t.type === 'expense' && t.date.startsWith(target));
-                const total = filtered.reduce((a,b)=>a+b.amount,0);
-                const byMethod={cash:0,mobile:0,card:0}; const byCat={};
-                filtered.forEach(t=>{ if(byMethod[t.method]!==undefined) byMethod[t.method]+=t.amount; byCat[t.category]=(byCat[t.category]||0)+t.amount; });
-                const sortedCats = Object.entries(byCat).map(([k,v])=>({label:k,amount:v,pct:total===0?0:Math.round(v/total*100)})).sort((a,b)=>b.amount-a.amount);
-                return {total, byMethod, sortedCats};
-            }, [transactions, year, month]);
 
-            const changeMonth = (d) => { let m=month+d; let y=year; if(m>12){m=1;y++} if(m<1){m=12;y--} setMonth(m); setYear(y); };
-            const getPct = (v) => stats.total===0?0:Math.round((v/stats.total)*100);
+            const stats = useMemo(() => {
+                const targetPrefix = `${year}-${String(month).padStart(2,'0')}`;
+                const filtered = transactions.filter(t => t.type === 'expense' && t.date.startsWith(targetPrefix));
+                const total = filtered.reduce((a, b) => a + b.amount, 0);
+                const byMethod = { cash: 0, mobile: 0, card: 0, transfer: 0 };
+                const byCat = {};
+                filtered.forEach(t => { 
+                    if(byMethod[t.method] !== undefined) byMethod[t.method] += t.amount;
+                    byCat[t.category] = (byCat[t.category] || 0) + t.amount;
+                });
+                const sortedCats = Object.entries(byCat)
+                    .map(([k, v]) => ({ label: k, amount: v, pct: total===0?0:Math.round(v/total*100) }))
+                    .sort((a,b) => b.amount - a.amount);
+                return { total, byMethod, sortedCats };
+            }, [transactions, year, month]);
+            
+            const getPct = (val) => stats.total === 0 ? 0 : Math.round((val / stats.total) * 100);
+            const changeMonth = (delta) => {
+                let m = month + delta; let y = year;
+                if(m > 12) { m = 1; y++; } if(m < 1) { m = 12; y--; }
+                setMonth(m); setYear(y);
+            };
 
             return (
                 <PageContainer title="透視 Insight" onBack={onBack}>
@@ -355,20 +285,13 @@
                         <div className="space-y-4 animate-fade-in">
                             {mode === 'method' ? (
                                 <>
-                                    <MethodBar label="現金" sub="實感支出" icon="fa-coins" color={METHODS.cash.color} bar={METHODS.cash.bar} amount={stats.byMethod.cash} pct={getPct(stats.byMethod.cash)} painType="solid" />
-                                    <MethodBar label="行動" sub="無痛累積" icon="fa-mobile-screen" color={METHODS.mobile.color} bar={METHODS.mobile.bar} amount={stats.byMethod.mobile} pct={getPct(stats.byMethod.mobile)} painType="ghost" />
-                                    <MethodBar label="信用卡" sub="無痛累積" icon="fa-credit-card" color={METHODS.card.color} bar={METHODS.card.bar} amount={stats.byMethod.card} pct={getPct(stats.byMethod.card)} painType="ghost" />
+                                    <MethodBar label={METHODS.cash.label} sub="實感支出" icon={METHODS.cash.icon} color={METHODS.cash.color} bar={METHODS.cash.bar} amount={stats.byMethod.cash} pct={getPct(stats.byMethod.cash)} painType="solid" />
+                                    <MethodBar label={METHODS.mobile.label} sub="無痛累積" icon={METHODS.mobile.icon} color={METHODS.mobile.color} bar={METHODS.mobile.bar} amount={stats.byMethod.mobile} pct={getPct(stats.byMethod.mobile)} painType="ghost" />
+                                    <MethodBar label={METHODS.card.label} sub="無痛累積" icon={METHODS.card.icon} color={METHODS.card.color} bar={METHODS.card.bar} amount={stats.byMethod.card} pct={getPct(stats.byMethod.card)} painType="ghost" />
+                                    <MethodBar label={METHODS.transfer.label} sub="實感支出" icon={METHODS.transfer.icon} color={METHODS.transfer.color} bar={METHODS.transfer.bar} amount={stats.byMethod.transfer} pct={getPct(stats.byMethod.transfer)} painType="solid" />
                                 </>
                             ) : (
-                                stats.sortedCats.map((c, i) => (
-                                    <div key={i} className="bg-white px-4 py-3 rounded-xl border border-white/60 shadow-sm flex items-center gap-3">
-                                        <div className="w-12 text-xs font-bold text-base-600 truncate">{c.label}</div>
-                                        <div className="flex-1">
-                                            <div className="flex justify-between text-[10px] text-base-400 mb-1"><span className="font-bold text-base-800">${formatMoney(c.amount)}</span><span>{c.pct}%</span></div>
-                                            <div className="w-full h-1.5 bg-base-100 rounded-full overflow-hidden"><div style={{width: `${c.pct}%`}} className="h-full bg-base-800 rounded-full"></div></div>
-                                        </div>
-                                    </div>
-                                ))
+                                stats.sortedCats.map((c, i) => <CategoryBar key={i} label={c.label} amount={c.amount} pct={c.pct} />)
                             )}
                         </div>
                     </div>
@@ -377,7 +300,7 @@
         };
 
         const MethodBar = ({ label, sub, icon, color, bar, amount, pct, painType }) => (
-            <div className={`p-4 rounded-2xl shadow-powder border border-white/60 flex flex-col gap-3 ${painType === 'solid' ? 'bg-white' : 'bg-white/50 backdrop-blur-sm'}`}>
+            <div className={`p-4 rounded-2xl shadow-sm border border-base-100 flex flex-col gap-3 ${painType === 'solid' ? 'bg-white' : 'bg-white/60 backdrop-blur-sm'}`}>
                 <div className="flex justify-between items-center">
                     <div className="flex items-center gap-2">
                         <i className={`fa-solid ${icon} ${color}`}></i>
@@ -385,26 +308,39 @@
                     </div>
                     <span className="text-sm font-bold font-num text-base-800">${formatMoney(amount)}</span>
                 </div>
-                <div className="w-full h-3 bg-base-100 rounded-full overflow-hidden relative">
+                <div className="w-full h-2 bg-base-100 rounded-full overflow-hidden relative">
                     <div style={{width: `${pct}%`}} className={`h-full ${bar} transition-all duration-500 absolute top-0 left-0 ${painType==='ghost'?'opacity-70':''}`}></div>
                 </div>
                 <div className="text-right text-[10px] font-bold text-base-400">{pct}%</div>
             </div>
         );
 
-        const RecordPage = ({ transactions, onBack, onOpenSearch }) => {
+        const CategoryBar = ({ label, amount, pct }) => (
+            <div className="bg-white px-4 py-3 rounded-xl border border-base-100 flex items-center gap-3">
+                <div className="w-12 text-xs font-bold text-base-600 truncate">{label}</div>
+                <div className="flex-1">
+                    <div className="flex justify-between text-[10px] text-base-400 mb-1"><span className="font-bold text-base-800">${formatMoney(amount)}</span><span>{pct}%</span></div>
+                    <div className="w-full h-1.5 bg-base-100 rounded-full overflow-hidden"><div style={{width: `${pct}%`}} className="h-full bg-base-800 rounded-full"></div></div>
+                </div>
+            </div>
+        );
+
+        // 5. Record Page
+        const RecordPage = ({ transactions, onBack }) => {
             const [year, setYear] = useState(new Date().getFullYear());
             const [month, setMonth] = useState(new Date().getMonth() + 1);
             const [selectedDate, setSelectedDate] = useState(getToday());
-            const [filter, setFilter] = useState('all');
-            
             const days = useMemo(() => getCalendarDays(year, month), [year, month]);
-            const dailyTx = transactions.filter(t => t.date === selectedDate && (filter==='all' ? true : t.type===filter));
+            const dailyTx = transactions.filter(t => t.date === selectedDate);
             const hasTx = (d) => transactions.some(t => t.date === d);
-            const changeMonth = (d) => { let m=month+d; let y=year; if(m>12){m=1;y++} if(m<1){m=12;y--} setMonth(m); setYear(y); };
+            const changeMonth = (delta) => {
+                let m = month + delta; let y = year;
+                if(m > 12) { m = 1; y++; } if(m < 1) { m = 12; y--; }
+                setMonth(m); setYear(y);
+            };
 
             return (
-                <PageContainer title="紀錄 Record" onBack={onBack} noScroll={true} extraIcon="fa-magnifying-glass" onExtraClick={onOpenSearch}>
+                <PageContainer title="紀錄 Record" onBack={onBack} noScroll={true}>
                     <div className="flex-none bg-base-50 px-4 py-4 border-b border-base-200 z-10 shadow-sm">
                         <div className="flex justify-between items-center mb-4 px-2">
                             <button onClick={()=>changeMonth(-1)} className="w-8 h-8 flex items-center justify-center text-base-400 hover:text-base-800 bg-white rounded-full shadow-sm"><i className="fa-solid fa-chevron-left"></i></button>
@@ -427,16 +363,7 @@
                         </div>
                     </div>
                     <div className="flex-1 overflow-y-auto no-scrollbar p-4 bg-white/50">
-                        <div className="sticky top-0 bg-white/50 backdrop-blur py-2 z-10 flex justify-between items-center mb-2">
-                            <span className="text-xs font-bold text-base-400">{selectedDate}</span>
-                            <div className="flex gap-2">
-                                {['all','income','expense'].map(f => (
-                                    <button key={f} onClick={()=>setFilter(f)} className={`px-2 py-0.5 rounded text-[10px] font-bold ${filter===f ? 'bg-base-800 text-white' : 'bg-base-200 text-base-400'}`}>
-                                        {f==='all'?'全':f==='income'?'收':'支'}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
+                        <div className="text-xs font-bold text-base-400 mb-3 sticky top-0 bg-white/50 backdrop-blur py-2 z-10">{selectedDate} 流水帳</div>
                         {dailyTx.length === 0 ? <div className="text-center text-xs text-base-300 py-8">本日無紀錄</div> : dailyTx.map(t => <TxItem key={t.id} tx={t} />)}
                         <div className="h-10"></div>
                     </div>
@@ -444,13 +371,14 @@
             );
         };
 
+        // 6. Vault Page
         const VaultPage = ({ transactions, onBack }) => {
             const [visible, setVisible] = useState(false);
             const net = useMemo(() => transactions.reduce((a, b) => b.type === 'income' ? a + b.amount : a - b.amount, 0), [transactions]);
             return (
                 <PageContainer title="金庫 Vault" onBack={onBack}>
                     <div className="flex flex-col items-center justify-center h-[60vh] px-6">
-                        <div className="w-20 h-20 bg-white rounded-full shadow-powder flex items-center justify-center text-rose-500 mb-6 border border-white"><i className={`fa-solid ${visible ? 'fa-lock-open' : 'fa-lock'} text-3xl`}></i></div>
+                        <div className="w-20 h-20 bg-white rounded-full shadow-soft flex items-center justify-center text-rose-500 mb-6 border border-white"><i className={`fa-solid ${visible ? 'fa-lock-open' : 'fa-lock'} text-3xl`}></i></div>
                         <div className="text-xs font-bold text-base-400 uppercase tracking-widest mb-2">Total Assets</div>
                         <div onClick={() => setVisible(!visible)} className="text-4xl font-bold text-base-800 font-num cursor-pointer select-none">{visible ? `$${formatMoney(net)}` : '••••••••'}</div>
                         <p className="text-xs text-base-300 mt-4">點擊顯示/隱藏金額</p>
@@ -459,97 +387,213 @@
             );
         };
 
+        const TxItem = ({ tx, onDelete }) => {
+            const m = METHODS[tx.method] || METHODS.cash; const isExp = tx.type === 'expense';
+            return (
+                <div className="flex justify-between items-center py-3 border-b border-base-200 last:border-0 animate-pop">
+                    <div className="flex items-center gap-3">
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm ${isExp ? m.bg + ' ' + m.color : 'bg-emerald-50 text-emerald-600'}`}><i className={`fa-solid ${isExp ? m.icon : 'fa-arrow-down'}`}></i></div>
+                        <div><div className="text-sm font-bold text-base-800">{tx.category}</div><div className="text-[10px] text-base-400">{tx.date.slice(5)} · {isExp ? m.label : '收入'}</div></div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className={`text-base font-bold font-num ${isExp ? 'text-base-800' : 'text-emerald-600'}`}>{isExp ? '-' : '+'}{formatMoney(tx.amount)}</div>
+                        {onDelete && <button onClick={(e) => {e.stopPropagation(); if(confirm('刪除?')) onDelete(tx.id)}} className="text-base-200 hover:text-rose-500 px-1"><i className="fa-solid fa-xmark text-xs"></i></button>}
+                    </div>
+                </div>
+            );
+        };
+
+        // v3.4 Add Modal: Themed & De-blacked
         const AddModal = ({ mode, onClose, onSave }) => {
-            const [amount, setAmount] = useState(''); const [method, setMethod] = useState(mode === 'income' ? 'cash' : ''); const [cat, setCat] = useState('');
-            const cats = mode === 'income' ? CATS_INC : CATS_EXP;
+            const [amount, setAmount] = useState(''); 
+            const [method, setMethod] = useState(mode === 'income' ? 'cash' : ''); 
+            const [cat, setCat] = useState('');
+            
+            const cats = mode === 'income' ? CATEGORIES.income : CATEGORIES.expense;
+            
+            // Theme Colors Logic
+            const theme = mode === 'income' ? 'emerald' : 'rose';
+            const themeText = mode === 'income' ? 'text-emerald-600' : 'text-rose-600';
+            const themeBg = mode === 'income' ? 'bg-emerald-500' : 'bg-rose-500';
+            const themeRing = mode === 'income' ? 'ring-emerald-200' : 'ring-rose-200';
+
             const submit = () => {
                 if(!amount) return; if(mode==='expense' && !method) return;
                 onSave({ id: Date.now(), date: getToday(), amount: parseFloat(amount), type: mode, method: mode==='income'?'cash':method, category: cat||'其他' });
                 onClose();
             };
+
             return (
                 <div className="fixed inset-0 z-[100] flex flex-col justify-end">
                     <div className="absolute inset-0 bg-base-900/30 backdrop-blur-sm" onClick={onClose}></div>
-                    <div className="bg-white rounded-t-3xl w-full animate-slide-up relative z-10 safe-bottom shadow-2xl max-h-[85vh] flex flex-col">
-                        <div className="p-6 flex-none">
-                            <div className="flex justify-between mb-6"><span className="text-lg font-bold text-base-800">{mode==='income'?'進帳':'支出'}</span><button onClick={onClose}><i className="fa-solid fa-xmark text-base-400 text-xl"></i></button></div>
-                            <div className="flex justify-center mb-6 relative"><span className="text-2xl text-base-300 absolute left-8 top-2">$</span><input autoFocus type="number" value={amount} onChange={e=>setAmount(e.target.value)} placeholder="0" className="text-5xl font-bold text-center w-full outline-none font-num text-base-800 bg-transparent placeholder-base-100"/></div>
-                            {mode === 'expense' && <div className="mb-4"><div className="flex justify-center gap-3">{['cash','mobile','card'].map(k => (<button key={k} onClick={() => setMethod(k)} className={`w-14 h-14 rounded-2xl flex flex-col items-center justify-center gap-1 border-2 transition-all ${method===k ? 'border-base-800 bg-base-50 text-base-800' : 'border-base-100 text-base-300'}`}><i className={`fa-solid ${METHODS[k].icon} text-lg`}></i><span className="text-[10px] font-bold">{METHODS[k].label}</span></button>))}</div></div>}
+                    <div className="bg-white rounded-t-3xl p-6 w-full animate-slide-up relative z-10 safe-bottom shadow-2xl">
+                        {/* Header */}
+                        <div className="flex justify-between mb-8 items-center">
+                            <span className={`text-xl font-bold ${themeText}`}>{mode==='income'?'進帳 (Income)':'支出 (Expense)'}</span>
+                            <button onClick={onClose} className="w-8 h-8 rounded-full bg-base-100 flex items-center justify-center text-base-400 hover:bg-base-200"><i className="fa-solid fa-xmark"></i></button>
                         </div>
                         
-                        <div className="flex-1 overflow-y-auto no-scrollbar px-6 pb-4">
-                            <div className="grid grid-cols-4 gap-4">
+                        {/* Amount Input */}
+                        <div className="flex justify-center mb-8 relative">
+                            <span className="text-2xl text-base-300 absolute left-8 top-2">$</span>
+                            <input autoFocus type="number" value={amount} onChange={e=>setAmount(e.target.value)} placeholder="0" 
+                                className={`text-5xl font-bold text-center w-full outline-none font-num bg-transparent placeholder-base-100 ${themeText}`}/>
+                        </div>
+
+                        {/* Payment Method */}
+                        {mode === 'expense' && (
+                            <div className="mb-6">
+                                <div className="text-xs font-bold text-base-300 uppercase tracking-widest text-center mb-3">Payment Method</div>
+                                <div className="flex justify-center gap-3">
+                                    {['cash','mobile','card','transfer'].map(k => (
+                                        <button key={k} onClick={() => setMethod(k)} 
+                                            className={`w-16 h-16 rounded-2xl flex flex-col items-center justify-center gap-1 transition-all border 
+                                            ${method===k ? `bg-white border-${theme}-200 shadow-md ring-2 ${themeRing} ${METHODS[k].color}` : 'border-base-100 bg-base-50 text-base-300 hover:bg-white'}`}>
+                                            <i className={`fa-solid ${METHODS[k].icon} text-lg`}></i>
+                                            <span className="text-[10px] font-bold">{METHODS[k].label}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Categories */}
+                        <div className="mb-8">
+                            <div className="text-xs font-bold text-base-300 uppercase tracking-widest text-center mb-3">Category</div>
+                            <div className="flex flex-wrap justify-center gap-2 max-h-[150px] overflow-y-auto no-scrollbar">
                                 {cats.map(c => (
-                                    <button key={c.id} onClick={()=>setCat(c.id)} className={`aspect-square rounded-2xl flex flex-col items-center justify-center transition-all ${cat===c.id ? 'bg-base-800 text-white shadow-lg' : 'bg-base-50 text-base-400 hover:bg-base-100'}`}>
-                                        <i className={`fa-solid ${c.icon} text-xl mb-1`}></i>
-                                        <span className="text-[10px] font-bold">{c.id}</span>
+                                    <button key={c} onClick={() => setCat(c)} 
+                                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border 
+                                        ${cat===c ? `${themeBg} text-white border-transparent shadow-md` : 'bg-white border-base-200 text-base-500 hover:border-base-300'}`}>
+                                        {c}
                                     </button>
                                 ))}
                             </div>
                         </div>
-                        <div className="p-6 pt-2 flex-none">
-                            <button onClick={submit} className={`w-full py-4 rounded-xl text-white font-bold text-lg active:scale-95 transition-transform ${mode==='income'?'bg-emerald-500':'bg-base-800'}`}>確認</button>
+
+                        {/* Confirm Button */}
+                        <button onClick={submit} className={`w-full py-4 rounded-xl text-white font-bold text-lg active:scale-95 transition-transform shadow-lg ${themeBg}`}>
+                            確認紀錄
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        // v3.4 Murmur Modal
+        const MurmurModal = ({ notes, onClose, onSave, onDelete }) => {
+            const [text, setText] = useState('');
+            const [listening, setListening] = useState(false);
+            const recognitionRef = useRef(null);
+            const listRef = useRef(null);
+
+            useEffect(() => {
+                if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    recognitionRef.current = new SpeechRecognition();
+                    recognitionRef.current.continuous = false;
+                    recognitionRef.current.lang = 'zh-TW';
+                    recognitionRef.current.interimResults = false;
+                    recognitionRef.current.onresult = (event) => {
+                        const transcript = event.results[0][0].transcript;
+                        setText(prev => prev + transcript);
+                        setListening(false);
+                    };
+                    recognitionRef.current.onerror = () => setListening(false);
+                    recognitionRef.current.onend = () => setListening(false);
+                }
+            }, []);
+
+            const toggleListen = () => {
+                if(!recognitionRef.current) { alert('您的瀏覽器不支援語音辨識'); return; }
+                if(listening) { recognitionRef.current.stop(); setListening(false); }
+                else { recognitionRef.current.start(); setListening(true); }
+            };
+
+            const save = () => { 
+                if(text) {
+                    onSave(text); 
+                    setText(''); 
+                    if(listRef.current) listRef.current.scrollTop = 0;
+                }
+            };
+
+            return (
+                <div className="fixed inset-0 z-[100] flex flex-col justify-end">
+                    <div className="absolute inset-0 bg-base-900/30 backdrop-blur-sm" onClick={onClose}></div>
+                    <div className="bg-white rounded-t-3xl p-6 w-full animate-slide-up relative z-10 safe-bottom h-[85vh] flex flex-col shadow-2xl">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="font-bold text-base-800">隨記 Memo</h3>
+                            <button onClick={onClose}><i className="fa-solid fa-xmark text-base-400"></i></button>
+                        </div>
+                        <div className="flex-none mb-4">
+                            <textarea value={text} onChange={e=>setText(e.target.value)} placeholder="好想買那個...但好貴..." className="w-full h-24 p-4 bg-base-50 rounded-xl outline-none resize-none mb-3 text-base-800 border border-base-200 shadow-inner"></textarea>
+                            <div className="flex gap-3">
+                                <button onClick={toggleListen} className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${listening ? 'bg-rose-500 text-white animate-pulse' : 'bg-base-100 text-base-500'}`}><i className={`fa-solid ${listening ? 'fa-stop' : 'fa-microphone'}`}></i></button>
+                                <button onClick={save} className="flex-1 bg-base-800 text-white rounded-xl font-bold shadow-lg active:scale-95 transition-transform">紀錄心情</button>
+                            </div>
+                        </div>
+                        <div className="flex-1 overflow-y-auto no-scrollbar border-t border-base-100 pt-4" ref={listRef}>
+                            <div className="text-xs font-bold text-base-400 mb-3 px-1">內心戲時光機</div>
+                            {notes.length === 0 ? (
+                                <div className="text-center text-xs text-base-300 py-10">尚無隨記</div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {notes.map(n => (
+                                        <div key={n.id} className="bg-base-50 p-4 rounded-xl text-sm text-base-700 border border-base-100 shadow-sm flex justify-between group animate-pop">
+                                            <div>
+                                                <div className="text-[10px] text-base-400 mb-1 font-bold">{n.date}</div>
+                                                <div className="leading-relaxed">{n.text}</div>
+                                            </div>
+                                            <button onClick={()=>onDelete(n.id)} className="text-base-300 hover:text-rose-500 self-start px-2"><i className="fa-solid fa-trash text-xs"></i></button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
             );
         };
 
-        const MurmurModal = ({ notes, onClose, onSave, onDelete }) => {
-            const [text, setText] = useState(''); const [listening, setListening] = useState(false); const recognitionRef = useRef(null); const listRef = useRef(null);
-            useEffect(() => {
-                if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-                    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-                    recognitionRef.current = new SR(); recognitionRef.current.lang = 'zh-TW'; recognitionRef.current.continuous=false;
-                    recognitionRef.current.onresult = (e) => { setText(p => p + e.results[0][0].transcript); setListening(false); };
-                    recognitionRef.current.onend = () => setListening(false);
-                }
-            }, []);
-            const toggleListen = () => { if(listening) {recognitionRef.current.stop(); setListening(false)} else {recognitionRef.current.start(); setListening(true)} };
-            const save = () => { if(text) { onSave(text); setText(''); if(listRef.current) listRef.current.scrollTop=0; } };
-            return (
-                <div className="fixed inset-0 z-[100] flex flex-col justify-end">
-                    <div className="absolute inset-0 bg-base-900/30 backdrop-blur-sm" onClick={onClose}></div>
-                    <div className="bg-white rounded-t-3xl p-6 w-full animate-slide-up relative z-10 safe-bottom h-[85vh] flex flex-col shadow-2xl">
-                        <div className="flex justify-between items-center mb-4"><h3 className="font-bold text-base-800">隨記 Memo</h3><button onClick={onClose}><i className="fa-solid fa-xmark text-base-400"></i></button></div>
-                        <div className="flex-none mb-4"><textarea value={text} onChange={e=>setText(e.target.value)} className="w-full h-24 p-4 bg-base-50 rounded-xl outline-none resize-none mb-3 text-base-800 border border-base-200 shadow-inner" placeholder="隨手記下..."></textarea><div className="flex gap-3"><button onClick={toggleListen} className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${listening ? 'bg-rose-500 text-white animate-pulse' : 'bg-base-100 text-base-500'}`}><i className={`fa-solid ${listening ? 'fa-stop' : 'fa-microphone'}`}></i></button><button onClick={save} className="flex-1 bg-base-800 text-white rounded-xl font-bold shadow-lg">紀錄</button></div></div>
-                        <div className="flex-1 overflow-y-auto no-scrollbar border-t border-base-100 pt-4" ref={listRef}>{notes.length===0?<div className="text-center text-xs text-base-300 py-10">尚無紀錄</div>:<div className="space-y-3">{notes.map(n=>(<div key={n.id} className="bg-base-50 p-4 rounded-xl text-sm text-base-700 border border-base-100 shadow-sm flex justify-between group"><div><div className="text-[10px] text-base-400 mb-1 font-bold">{n.date}</div><div className="leading-relaxed">{n.text}</div></div><button onClick={()=>onDelete(n.id)} className="text-base-300 hover:text-rose-500 self-start px-2"><i className="fa-solid fa-trash text-xs"></i></button></div>))}</div>}</div>
-                    </div>
-                </div>
-            );
-        };
-
+        // --- App Root ---
         const App = () => {
-            const [page, setPage] = useState('home'); const [txs, setTxs] = useState([]); const [notes, setNotes] = useState([]);
-            const [addMode, setAddMode] = useState(null); const [murmurOpen, setMurmurOpen] = useState(false); const [searchOpen, setSearchOpen] = useState(false); const [settingsOpen, setSettingsOpen] = useState(false);
-            useEffect(() => { const d = localStorage.getItem(DB_KEY); if(d) setTxs(JSON.parse(d)); const n = localStorage.getItem(NOTE_KEY); if(n) setNotes(JSON.parse(n)); }, []);
+            const [page, setPage] = useState('home'); 
+            const [txs, setTxs] = useState([]);
+            const [notes, setNotes] = useState([]);
+            const [addMode, setAddMode] = useState(null);
+            const [murmurOpen, setMurmurOpen] = useState(false);
+
+            useEffect(() => { 
+                const d = localStorage.getItem(DB_KEY); if(d) setTxs(JSON.parse(d)); 
+                const n = localStorage.getItem(NOTE_KEY); if(n) setNotes(JSON.parse(n));
+            }, []);
+            
             const saveTx = (t) => { const n = [t,...txs]; setTxs(n); localStorage.setItem(DB_KEY, JSON.stringify(n)); };
             const delTx = (id) => { const n = txs.filter(t=>t.id!==id); setTxs(n); localStorage.setItem(DB_KEY, JSON.stringify(n)); };
             const saveNote = (txt) => { const n = [{id:Date.now(), text:txt, date:getToday()}, ...notes]; setNotes(n); localStorage.setItem(NOTE_KEY, JSON.stringify(n)); };
-            const delNote = (id) => { const n = notes.filter(n=>n.id!==id); setNotes(n); localStorage.setItem(NOTE_KEY, JSON.stringify(n)); };
-            const restoreData = (data) => { if(data.txs) {setTxs(data.txs); localStorage.setItem(DB_KEY, JSON.stringify(data.txs));} if(data.notes) {setNotes(data.notes); localStorage.setItem(NOTE_KEY, JSON.stringify(data.notes));} };
-            const resetAll = () => { if(confirm('警告：這將清除所有資料且無法復原！')) { localStorage.clear(); setTxs([]); setNotes([]); alert('資料已重置'); setSettingsOpen(false); } };
-            const getAllData = () => ({ txs, notes });
+            const delNote = (id) => { const n = notes.filter(note=>note.id!==id); setNotes(n); localStorage.setItem(NOTE_KEY, JSON.stringify(n)); };
 
             return (
                 <div className="h-full w-full bg-base-50 text-base-800">
-                    {page === 'home' && <HomeLobby onNavigate={setPage} onOpenMurmur={()=>setMurmurOpen(true)} onOpenSettings={()=>setSettingsOpen(true)} noteCount={notes.length} />}
+                    {page === 'home' && <HomeLobby onNavigate={setPage} onOpenMurmur={()=>setMurmurOpen(true)} noteCount={notes.length} />}
                     {page === 'journal' && <JournalPage transactions={txs} onBack={()=>setPage('home')} onOpenAdd={setAddMode} onDelete={delTx} />}
                     {page === 'insight' && <InsightPage transactions={txs} onBack={()=>setPage('home')} />}
-                    {page === 'calendar' && <RecordPage transactions={txs} onBack={()=>setPage('home')} onOpenSearch={()=>setSearchOpen(true)} />}
+                    {page === 'calendar' && <RecordPage transactions={txs} onBack={()=>setPage('home')} />}
                     {page === 'vault' && <VaultPage transactions={txs} onBack={()=>setPage('home')} />}
                     
                     {addMode && <AddModal mode={addMode} onClose={()=>setAddMode(null)} onSave={saveTx} />}
                     {murmurOpen && <MurmurModal notes={notes} onClose={()=>setMurmurOpen(false)} onSave={saveNote} onDelete={delNote} />}
-                    {searchOpen && <SearchModal transactions={txs} onClose={()=>setSearchOpen(false)} />}
-                    {settingsOpen && <SettingsModal onClose={()=>setSettingsOpen(false)} getAllData={getAllData} restoreData={restoreData} onReset={resetAll} />}
                 </div>
             );
         };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
-        if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js'));
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => { navigator.serviceWorker.register('./service-worker.js'); });
+        }
     </script>
 </body>
 </html>
