@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>CashFlow Sense v3.3</title>
+    <title>CashFlow Sense v3.4</title>
     
     <link rel="manifest" href="./manifest.json">
-    <meta name="theme-color" content="#F8FAFC"> <!-- Slate-50 -->
+    <meta name="theme-color" content="#F8FAFC">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="./icons/icon-192.png">
@@ -18,18 +18,22 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- 視覺系統 v3.3: Final Polish -->
+    <!-- 視覺系統 v3.4: Refined Powder Blue -->
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        base: { 50: '#F8FAFC', 100: '#F1F5F9', 200: '#E2E8F0', 300: '#CBD5E1', 800: '#1E293B', 900: '#0F172A' },
-                        sky: { 50: '#F0F9FF', 500: '#0EA5E9' },
+                        base: { 50: '#F8FAFC', 100: '#F1F5F9', 200: '#E2E8F0', 800: '#1E293B' },
+                        // 功能色 (Morandi)
+                        journal: '#64748B', 
+                        insight: '#0EA5E9', 
+                        calendar: '#10B981', 
+                        vault: '#F43F5E',
                     },
                     boxShadow: {
-                        'powder': '0 10px 25px -5px rgba(186, 230, 253, 0.6), 0 8px 10px -6px rgba(186, 230, 253, 0.3)',
-                        'float': '0 10px 30px -10px rgba(14, 165, 233, 0.15)',
+                        'powder': '0 10px 25px -5px rgba(186, 230, 253, 0.5), 0 8px 10px -6px rgba(186, 230, 253, 0.2)',
+                        'float': '0 20px 40px -10px rgba(14, 165, 233, 0.15)',
                     },
                     animation: {
                         'fade-in': 'fadeIn 0.4s ease-out',
@@ -51,8 +55,8 @@
         .safe-top { padding-top: env(safe-area-inset-top); }
         .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        .glass-panel { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255, 255, 255, 0.4); }
-        .murmur-glass { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.8); box-shadow: 0 8px 32px 0 rgba(186, 230, 253, 0.3); }
+        .glass-panel { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255, 255, 255, 0.4); }
+        .murmur-glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.6); box-shadow: 0 8px 32px 0 rgba(186, 230, 253, 0.2); }
     </style>
 </head>
 <body>
@@ -63,20 +67,6 @@
         const DB_KEY = 'cfs_db_v1';
         const NOTE_KEY = 'cfs_notes_v1';
 
-        // --- Utils ---
-        const getToday = () => new Date().toISOString().split('T')[0];
-        const formatMoney = (n) => new Intl.NumberFormat('en-US').format(n);
-        const getCalendarDays = (year, month) => {
-            const firstDay = new Date(year, month - 1, 1);
-            const lastDay = new Date(year, month, 0);
-            let days = [];
-            for(let i=0; i<firstDay.getDay(); i++) days.push(null);
-            for(let i=1; i<=lastDay.getDate(); i++) {
-                days.push({ day: i, dateStr: `${year}-${String(month).padStart(2,'0')}-${String(i).padStart(2,'0')}` });
-            }
-            return days;
-        };
-
         // --- Config ---
         const METHODS = {
             cash: { id: 'cash', label: '現金', painType: 'solid', color: 'text-emerald-700', bg: 'bg-emerald-100', bar: 'bg-emerald-600', icon: 'fa-coins' },
@@ -85,49 +75,63 @@
             bank: { id: 'bank', label: '轉帳', painType: 'solid', color: 'text-slate-600', bg: 'bg-slate-100', bar: 'bg-slate-500', icon: 'fa-building-columns' }
         };
 
-        // v3.3 Expanded Categories
-        const CATS_EXPENSE = [
-            '🍱 飲食', '🚇 交通', '🏠 居家', '🛍️ 購物', '🎬 娛樂', '💊 醫療', 
-            '🎓 教育', '🥂 社交', '💄 美妝', '📱 3C', '🚗 車輛', '🐶 寵物'
+        const CATS_EXP = [
+            {id:'飲食', icon:'fa-utensils'}, {id:'交通', icon:'fa-train-subway'}, {id:'居家', icon:'fa-house'}, 
+            {id:'購物', icon:'fa-bag-shopping'}, {id:'娛樂', icon:'fa-gamepad'}, {id:'醫療', icon:'fa-pills'},
+            {id:'教育', icon:'fa-graduation-cap'}, {id:'社交', icon:'fa-gift'}, {id:'美妝', icon:'fa-wand-magic-sparkles'},
+            {id:'3C', icon:'fa-mobile'}, {id:'車輛', icon:'fa-car'}, {id:'寵物', icon:'fa-paw'}
         ];
-        const CATS_INCOME = ['💰 薪資', '🧧 獎金', '📈 投資', '💼 兼職', '🎁 其他'];
+        const CATS_INC = [
+            {id:'薪資', icon:'fa-briefcase'}, {id:'獎金', icon:'fa-award'}, {id:'投資', icon:'fa-chart-line'},
+            {id:'兼職', icon:'fa-laptop-code'}, {id:'其他', icon:'fa-box-open'}
+        ];
+
+        // --- Utils ---
+        const getToday = () => new Date().toISOString().split('T')[0];
+        const formatMoney = (n) => new Intl.NumberFormat('en-US').format(n);
+        const getCalendarDays = (year, month) => {
+            const firstDay = new Date(year, month - 1, 1);
+            const lastDay = new Date(year, month, 0);
+            let days = [];
+            for(let i=0; i<firstDay.getDay(); i++) days.push(null);
+            for(let i=1; i<=lastDay.getDate(); i++) days.push({ day: i, dateStr: `${year}-${String(month).padStart(2,'0')}-${String(i).padStart(2,'0')}` });
+            return days;
+        };
 
         // --- Components ---
 
-        // 1. Home Lobby (v3.3 Clean Header + Settings)
-        const HomeLobby = ({ onNavigate, onOpenMemo, noteCount, onOpenSettings }) => {
+        // 1. Home Lobby (v3.4 Restored Center Axis)
+        const HomeLobby = ({ onNavigate, onOpenMurmur, onOpenSettings, noteCount }) => {
             return (
                 <div className="h-full flex flex-col p-6 animate-fade-in relative bg-base-50">
-                    {/* Header: De-carded, Clean, with Gear */}
-                    <div className="safe-top pt-4 pb-8 flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-2xl overflow-hidden shadow-sm border border-white">
-                                <img src="./icons/icon-192.png" alt="Logo" className="w-full h-full object-cover" />
-                            </div>
-                            <div>
-                                <h1 className="text-lg font-bold text-base-800 tracking-wide">CASH FLOW SENSE</h1>
-                                <span className="text-[10px] text-base-400 font-bold tracking-widest">v3.3 FINAL</span>
-                            </div>
-                        </div>
-                        <button onClick={onOpenSettings} className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-base-400 shadow-sm active:scale-90 transition-transform">
-                            <i className="fa-solid fa-gear"></i>
+                    {/* Header: Pure, Center, No Box */}
+                    <div className="safe-top pt-10 pb-8 flex flex-col items-center justify-center relative">
+                        {/* Settings Gear (Subtle) */}
+                        <button onClick={onOpenSettings} className="absolute right-0 top-12 text-base-300 hover:text-base-800 transition-colors p-2">
+                            <i className="fa-solid fa-gear text-lg"></i>
                         </button>
+
+                        <div className="w-20 h-20 rounded-3xl overflow-hidden mb-4 shadow-lg active:scale-95 transition-transform">
+                            <img src="./icons/icon-192.png" alt="Logo" className="w-full h-full object-cover" />
+                        </div>
+                        <h1 className="text-lg font-bold text-base-800 tracking-wider">CASH FLOW SENSE</h1>
+                        <span className="text-[10px] text-base-400 font-bold tracking-[0.2em] mt-1 opacity-60">v3.4 FINAL</span>
                     </div>
 
-                    {/* Matrix */}
-                    <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-5 pb-24">
+                    {/* Matrix: Restored Proportions (Aspect 4/3) */}
+                    <div className="flex-1 grid grid-cols-2 grid-rows-2 gap-5 pb-24 content-start">
                         <LobbyCard id="journal" title="日常" sub="Entry" icon="fa-pen-nib" theme="stone" onClick={()=>onNavigate('journal')} />
                         <LobbyCard id="insight" title="透視" sub="Insight" icon="fa-chart-pie" theme="sky" onClick={()=>onNavigate('insight')} />
                         <LobbyCard id="calendar" title="紀錄" sub="Record" icon="fa-regular fa-calendar" theme="emerald" onClick={()=>onNavigate('calendar')} />
                         <LobbyCard id="vault" title="金庫" sub="Asset" icon="fa-solid fa-vault" theme="rose" onClick={()=>onNavigate('vault')} isVault />
                     </div>
 
-                    {/* Memo Glass Capsule */}
+                    {/* Murmur Glass Capsule */}
                     <div className="fixed bottom-8 left-6 right-6 safe-bottom z-30">
-                        <button onClick={onOpenMemo} className="w-full murmur-glass rounded-2xl py-4 flex items-center justify-between px-6 active:scale-[0.98] transition-all hover:shadow-powder">
+                        <button onClick={onOpenMurmur} className="w-full murmur-glass rounded-2xl py-4 flex items-center justify-between px-6 active:scale-[0.98] transition-all hover:shadow-lg">
                             <div className="flex flex-col items-start">
                                 <span className="text-base-800 text-sm font-bold tracking-wide">隨記 Memo...</span>
-                                {noteCount > 0 && <span className="text-[10px] text-sky-500 font-bold mt-0.5">已有 {noteCount} 則紀錄</span>}
+                                {noteCount > 0 && <span className="text-[10px] text-sky-500 font-bold mt-0.5">已有 {noteCount} 則隨記</span>}
                             </div>
                             <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-sky-500 shadow-sm">
                                 <i className="fa-solid fa-microphone"></i>
@@ -138,66 +142,171 @@
             );
         };
 
-        const LobbyCard = ({ id, title, sub, icon, theme, onClick, isVault }) => {
+        const LobbyCard = ({ title, sub, icon, theme, onClick, isVault }) => {
             const themes = { stone: 'text-slate-600', sky: 'text-sky-500', emerald: 'text-emerald-500', rose: 'text-rose-500' };
+            // Aspect ratio constraint to prevent "Giant" look
             return (
-                <button onClick={onClick} className="group relative bg-white rounded-[2rem] shadow-powder p-5 flex flex-col justify-between items-start transition-all active:scale-[0.95] border border-white/60 overflow-hidden">
-                    <div className={`absolute -right-4 -top-4 w-24 h-24 rounded-full opacity-10 blur-xl bg-current ${themes[theme]}`}></div>
-                    <div className={`w-10 h-10 rounded-full bg-base-50 flex items-center justify-center ${themes[theme]} z-10 shadow-inner`}><i className={`fa-solid ${icon}`}></i></div>
-                    <div className="z-10 w-full text-left mt-4">
-                        <div className="text-[10px] text-base-300 font-bold uppercase tracking-wider mb-1">{sub}</div>
+                <button onClick={onClick} className="group relative bg-white rounded-[1.8rem] shadow-powder p-5 flex flex-col justify-between items-start transition-all active:scale-[0.96] border border-white/60 overflow-hidden hover:shadow-float aspect-[4/3]">
+                    <div className={`absolute -right-4 -top-4 w-20 h-20 rounded-full opacity-10 blur-xl bg-current ${themes[theme]}`}></div>
+                    <div className={`w-9 h-9 rounded-full bg-base-50 flex items-center justify-center ${themes[theme]} z-10 shadow-inner text-sm`}>
+                        <i className={`fa-solid ${icon}`}></i>
+                    </div>
+                    <div className="z-10 w-full text-left mt-2">
+                        <div className="text-[10px] text-base-300 font-bold uppercase tracking-wider mb-0.5">{sub}</div>
                         {isVault ? (
-                            <div className="flex justify-between items-end w-full"><div className="text-xl font-bold text-base-800">{title}</div><i className="fa-solid fa-lock text-xs text-base-200 mb-1"></i></div>
-                        ) : (<div className="text-xl font-bold text-base-800">{title}</div>)}
+                            <div className="flex justify-between items-end w-full">
+                                <div className="text-lg font-bold text-base-800">{title}</div>
+                                <i className="fa-solid fa-lock text-[10px] text-base-200 mb-1"></i>
+                            </div>
+                        ) : (
+                            <div className="text-lg font-bold text-base-800">{title}</div>
+                        )}
                     </div>
                 </button>
             )
         };
 
-        // 2. Page Container
+        // 2. Page Container (With Search & Settings Support)
         const PageContainer = ({ title, onBack, children, extraIcon, onExtraClick, noScroll }) => (
             <div className="h-full flex flex-col bg-base-50 animate-fade-in">
                 <div className="safe-top glass-panel sticky top-0 z-50 flex-none">
                     <div className="h-[60px] flex items-center justify-between px-4">
-                        <button onClick={onBack} className="bg-base-800 text-white rounded-full px-4 py-2 flex items-center gap-2 active:scale-90 transition-transform shadow-float hover:bg-base-900">
-                            <i className="fa-solid fa-arrow-left text-xs"></i><span className="text-xs font-bold">返回</span>
+                        <button onClick={onBack} className="bg-base-800 text-white rounded-full px-4 py-2 flex items-center gap-2 active:scale-90 transition-transform shadow-md hover:bg-base-900">
+                            <i className="fa-solid fa-arrow-left text-xs"></i>
+                            <span className="text-xs font-bold">返回</span>
                         </button>
                         <span className="text-base font-bold text-base-800 tracking-wide">{title}</span>
                         <div className="w-16 flex justify-end">
-                            {extraIcon ? (
-                                <button onClick={onExtraClick} className="w-10 h-10 rounded-full bg-white/50 flex items-center justify-center text-base-800 active:bg-base-200 shadow-sm"><i className={`fa-solid ${extraIcon}`}></i></button>
-                            ) : (<div className="w-10"></div>)}
+                            {extraIcon && (
+                                <button onClick={onExtraClick} className="w-10 h-10 rounded-full bg-white/50 flex items-center justify-center text-base-800 active:bg-base-200 shadow-sm transition-colors hover:bg-white">
+                                    <i className={`fa-solid ${extraIcon}`}></i>
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
-                <div className={`flex-1 relative ${noScroll ? 'overflow-hidden flex flex-col' : 'overflow-y-auto no-scrollbar'}`}>{children}</div>
+                <div className={`flex-1 relative ${noScroll ? 'overflow-hidden flex flex-col' : 'overflow-y-auto no-scrollbar'}`}>
+                    {children}
+                </div>
             </div>
         );
 
-        // 3. Journal Page (v3.3 Split View)
-        const JournalPage = ({ transactions, onBack, onOpenAdd, onDelete }) => {
-            const [filter, setFilter] = useState('all'); // all, income, expense
-            
-            const filteredTxs = useMemo(() => {
-                if(filter === 'all') return transactions;
-                return transactions.filter(t => t.type === filter);
-            }, [transactions, filter]);
+        // 3. Settings Modal (Backup/Restore)
+        const SettingsModal = ({ onClose, getAllData, restoreData, onReset }) => {
+            const handleBackup = () => {
+                const data = getAllData();
+                const blob = new Blob([JSON.stringify(data)], {type: "application/json"});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `CFS_Backup_${getToday()}.json`;
+                a.click();
+            };
+            const handleRestore = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        if(confirm('確定還原？這將覆蓋現有資料。')) { restoreData(data); onClose(); alert('還原成功'); }
+                    } catch(e) { alert('檔案格式錯誤'); }
+                };
+                reader.readAsText(file);
+            };
 
             return (
-                <PageContainer title="日常 Journal" onBack={onBack}>
-                    <div className="px-5 pt-4 pb-24">
-                        {/* Segment Control */}
-                        <div className="flex bg-white p-1 rounded-xl shadow-sm mb-4 border border-base-200">
-                            <button onClick={()=>setFilter('all')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${filter==='all'?'bg-base-800 text-white':'text-base-400'}`}>全部</button>
-                            <button onClick={()=>setFilter('income')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${filter==='income'?'bg-emerald-500 text-white':'text-base-400'}`}>收入</button>
-                            <button onClick={()=>setFilter('expense')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${filter==='expense'?'bg-rose-500 text-white':'text-base-400'}`}>支出</button>
+                <div className="fixed inset-0 z-[200] flex flex-col justify-end">
+                    <div className="absolute inset-0 bg-base-900/30 backdrop-blur-sm" onClick={onClose}></div>
+                    <div className="bg-white rounded-t-3xl p-6 w-full animate-slide-up relative z-10 safe-bottom">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="font-bold text-lg text-base-800">設定 Settings</h3>
+                            <button onClick={onClose}><i className="fa-solid fa-xmark text-base-400"></i></button>
                         </div>
+                        <div className="space-y-3">
+                            <button onClick={handleBackup} className="w-full bg-base-50 p-4 rounded-xl flex items-center gap-4 text-base-800 font-bold active:bg-base-100">
+                                <div className="w-10 h-10 rounded-full bg-sky-100 text-sky-600 flex items-center justify-center"><i className="fa-solid fa-download"></i></div>
+                                備份資料 (Backup)
+                            </button>
+                            <label className="w-full bg-base-50 p-4 rounded-xl flex items-center gap-4 text-base-800 font-bold active:bg-base-100 cursor-pointer">
+                                <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center"><i className="fa-solid fa-upload"></i></div>
+                                還原資料 (Restore)
+                                <input type="file" className="hidden" accept=".json" onChange={handleRestore} />
+                            </label>
+                            <div className="h-px bg-base-100 my-2"></div>
+                            <button onClick={onReset} className="w-full bg-rose-50 p-4 rounded-xl flex items-center gap-4 text-rose-600 font-bold active:bg-rose-100">
+                                <div className="w-10 h-10 rounded-full bg-rose-100 text-rose-500 flex items-center justify-center"><i className="fa-solid fa-trash"></i></div>
+                                重置所有資料
+                            </button>
+                        </div>
+                        <div className="mt-6 text-center text-xs text-base-300">CashFlow Sense v3.4</div>
+                    </div>
+                </div>
+            );
+        };
 
-                        {filteredTxs.length === 0 ? (
-                            <div className="py-20 text-center opacity-40"><i className="fa-solid fa-pen-nib text-4xl mb-3 text-base-300"></i><p className="text-sm text-base-400">尚無紀錄</p></div>
-                        ) : (
-                            filteredTxs.slice(0, 30).map(t => <TxItem key={t.id} tx={t} onDelete={onDelete} />)
-                        )}
+        // 4. Search Modal
+        const SearchModal = ({ transactions, onClose }) => {
+            const [term, setTerm] = useState('');
+            const results = useMemo(() => {
+                if(!term) return [];
+                return transactions.filter(t => 
+                    t.category.includes(term) || (t.method && METHODS[t.method].label.includes(term)) || t.amount.toString().includes(term)
+                );
+            }, [term, transactions]);
+
+            return (
+                <div className="fixed inset-0 z-[100] bg-white flex flex-col animate-fade-in">
+                    <div className="safe-top p-4 border-b border-base-100 flex items-center gap-3">
+                        <div className="flex-1 bg-base-50 rounded-xl flex items-center px-3 h-10">
+                            <i className="fa-solid fa-magnifying-glass text-base-400 mr-2"></i>
+                            <input autoFocus value={term} onChange={e=>setTerm(e.target.value)} placeholder="搜尋類別、金額..." className="bg-transparent w-full outline-none text-base-800 font-bold placeholder-base-300 text-sm"/>
+                        </div>
+                        <button onClick={onClose} className="text-base-400 font-bold text-sm">取消</button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4">
+                        {term && results.length === 0 && <div className="text-center text-base-300 mt-10 text-xs">無相符紀錄</div>}
+                        {results.map(t => <TxItem key={t.id} tx={t} />)}
+                    </div>
+                </div>
+            );
+        };
+
+        // 5. Shared Logic
+        const TxItem = ({ tx, onDelete }) => {
+            const m = METHODS[tx.method] || METHODS.cash; const isExp = tx.type === 'expense';
+            return (
+                <div className="flex justify-between items-center py-3 border-b border-base-200 last:border-0 animate-fade-in">
+                    <div className="flex items-center gap-3">
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm ${isExp ? m.bg + ' ' + m.color : 'bg-emerald-50 text-emerald-600'}`}><i className={`fa-solid ${isExp ? m.icon : 'fa-arrow-down'}`}></i></div>
+                        <div><div className="text-sm font-bold text-base-800">{tx.category}</div><div className="text-[10px] text-base-400">{tx.date.slice(5)} · {isExp ? m.label : '收入'}</div></div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className={`text-base font-bold font-num ${isExp ? 'text-base-800' : 'text-emerald-600'}`}>{isExp ? '-' : '+'}{formatMoney(tx.amount)}</div>
+                        {onDelete && <button onClick={(e) => {e.stopPropagation(); if(confirm('刪除?')) onDelete(tx.id)}} className="text-base-200 hover:text-rose-500 px-1"><i className="fa-solid fa-xmark text-xs"></i></button>}
+                    </div>
+                </div>
+            );
+        };
+
+        // 6. Pages
+        const JournalPage = ({ transactions, onBack, onOpenAdd, onDelete }) => {
+            const [filter, setFilter] = useState('all'); // all, income, expense
+            const displayTx = transactions.filter(t => filter==='all' ? true : t.type === filter).slice(0,30);
+            
+            return (
+                <PageContainer title="日常 Journal" onBack={onBack}>
+                    <div className="sticky top-0 bg-base-50 z-10 px-5 pt-2 pb-2">
+                        <div className="bg-white p-1 rounded-xl flex shadow-sm border border-base-100">
+                            {['all','income','expense'].map(f => (
+                                <button key={f} onClick={()=>setFilter(f)} className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${filter===f ? 'bg-base-800 text-white shadow' : 'text-base-400'}`}>
+                                    {f==='all'?'全部':f==='income'?'收入':'支出'}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="px-5 pb-24">
+                        {displayTx.length === 0 ? <div className="py-20 text-center opacity-40"><i className="fa-solid fa-pen-nib text-4xl mb-3 text-base-300"></i><p className="text-sm text-base-400">尚無紀錄</p></div> : displayTx.map(t => <TxItem key={t.id} tx={t} onDelete={onDelete} />)}
                     </div>
                     <div className="fixed bottom-8 right-6 safe-bottom z-50 flex flex-col gap-3">
                         <button onClick={() => onOpenAdd('income')} className="w-12 h-12 rounded-full bg-white shadow-powder text-emerald-600 flex items-center justify-center active:scale-90 transition-transform border border-white"><i className="fa-solid fa-plus"></i></button>
@@ -207,28 +316,23 @@
             );
         };
 
-        // 4. Insight Page
         const InsightPage = ({ transactions, onBack }) => {
             const [mode, setMode] = useState('method');
             const [year, setYear] = useState(new Date().getFullYear());
             const [month, setMonth] = useState(new Date().getMonth() + 1);
-
-            const stats = useMemo(() => {
-                const targetPrefix = `${year}-${String(month).padStart(2,'0')}`;
-                const filtered = transactions.filter(t => t.type === 'expense' && t.date.startsWith(targetPrefix));
-                const total = filtered.reduce((a, b) => a + b.amount, 0);
-                const byMethod = { cash: 0, mobile: 0, card: 0 };
-                const byCat = {};
-                filtered.forEach(t => { 
-                    if(byMethod[t.method] !== undefined) byMethod[t.method] += t.amount;
-                    byCat[t.category] = (byCat[t.category] || 0) + t.amount;
-                });
-                const sortedCats = Object.entries(byCat).map(([k, v]) => ({ label: k, amount: v, pct: total===0?0:Math.round(v/total*100) })).sort((a,b) => b.amount - a.amount);
-                return { total, byMethod, sortedCats };
-            }, [transactions, year, month]);
             
-            const getPct = (val) => stats.total === 0 ? 0 : Math.round((val / stats.total) * 100);
-            const changeMonth = (delta) => { let m = month + delta; let y = year; if(m > 12) { m = 1; y++; } if(m < 1) { m = 12; y--; } setMonth(m); setYear(y); };
+            const stats = useMemo(() => {
+                const target = `${year}-${String(month).padStart(2,'0')}`;
+                const filtered = transactions.filter(t => t.type === 'expense' && t.date.startsWith(target));
+                const total = filtered.reduce((a,b)=>a+b.amount,0);
+                const byMethod={cash:0,mobile:0,card:0}; const byCat={};
+                filtered.forEach(t=>{ if(byMethod[t.method]!==undefined) byMethod[t.method]+=t.amount; byCat[t.category]=(byCat[t.category]||0)+t.amount; });
+                const sortedCats = Object.entries(byCat).map(([k,v])=>({label:k,amount:v,pct:total===0?0:Math.round(v/total*100)})).sort((a,b)=>b.amount-a.amount);
+                return {total, byMethod, sortedCats};
+            }, [transactions, year, month]);
+
+            const changeMonth = (d) => { let m=month+d; let y=year; if(m>12){m=1;y++} if(m<1){m=12;y--} setMonth(m); setYear(y); };
+            const getPct = (v) => stats.total===0?0:Math.round((v/stats.total)*100);
 
             return (
                 <PageContainer title="透視 Insight" onBack={onBack}>
@@ -256,7 +360,15 @@
                                     <MethodBar label="信用卡" sub="無痛累積" icon="fa-credit-card" color={METHODS.card.color} bar={METHODS.card.bar} amount={stats.byMethod.card} pct={getPct(stats.byMethod.card)} painType="ghost" />
                                 </>
                             ) : (
-                                stats.sortedCats.map((c, i) => <CategoryBar key={i} label={c.label} amount={c.amount} pct={c.pct} />)
+                                stats.sortedCats.map((c, i) => (
+                                    <div key={i} className="bg-white px-4 py-3 rounded-xl border border-white/60 shadow-sm flex items-center gap-3">
+                                        <div className="w-12 text-xs font-bold text-base-600 truncate">{c.label}</div>
+                                        <div className="flex-1">
+                                            <div className="flex justify-between text-[10px] text-base-400 mb-1"><span className="font-bold text-base-800">${formatMoney(c.amount)}</span><span>{c.pct}%</span></div>
+                                            <div className="w-full h-1.5 bg-base-100 rounded-full overflow-hidden"><div style={{width: `${c.pct}%`}} className="h-full bg-base-800 rounded-full"></div></div>
+                                        </div>
+                                    </div>
+                                ))
                             )}
                         </div>
                     </div>
@@ -266,44 +378,33 @@
 
         const MethodBar = ({ label, sub, icon, color, bar, amount, pct, painType }) => (
             <div className={`p-4 rounded-2xl shadow-powder border border-white/60 flex flex-col gap-3 ${painType === 'solid' ? 'bg-white' : 'bg-white/50 backdrop-blur-sm'}`}>
-                <div className="flex justify-between items-center"><div className="flex items-center gap-2"><i className={`fa-solid ${icon} ${color}`}></i><div><span className="text-sm font-bold text-base-700 block">{label}</span><span className="text-[10px] text-base-400 font-bold block">{sub}</span></div></div><span className="text-sm font-bold font-num text-base-800">${formatMoney(amount)}</span></div>
-                <div className="w-full h-3 bg-base-100 rounded-full overflow-hidden relative"><div style={{width: `${pct}%`}} className={`h-full ${bar} transition-all duration-500 absolute top-0 left-0 ${painType==='ghost'?'opacity-70':''}`}></div></div>
+                <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                        <i className={`fa-solid ${icon} ${color}`}></i>
+                        <div><span className="text-sm font-bold text-base-700 block">{label}</span><span className="text-[10px] text-base-400 font-bold block">{sub}</span></div>
+                    </div>
+                    <span className="text-sm font-bold font-num text-base-800">${formatMoney(amount)}</span>
+                </div>
+                <div className="w-full h-3 bg-base-100 rounded-full overflow-hidden relative">
+                    <div style={{width: `${pct}%`}} className={`h-full ${bar} transition-all duration-500 absolute top-0 left-0 ${painType==='ghost'?'opacity-70':''}`}></div>
+                </div>
                 <div className="text-right text-[10px] font-bold text-base-400">{pct}%</div>
             </div>
         );
-        const CategoryBar = ({ label, amount, pct }) => (
-            <div className="bg-white px-4 py-3 rounded-xl border border-white/60 shadow-sm flex items-center gap-3"><div className="w-12 text-xs font-bold text-base-600 truncate">{label}</div><div className="flex-1"><div className="flex justify-between text-[10px] text-base-400 mb-1"><span className="font-bold text-base-800">${formatMoney(amount)}</span><span>{pct}%</span></div><div className="w-full h-1.5 bg-base-100 rounded-full overflow-hidden"><div style={{width: `${pct}%`}} className="h-full bg-base-800 rounded-full"></div></div></div></div>
-        );
 
-        // 5. Record Page (v3.3 Split View + Search)
-        const RecordPage = ({ transactions, onBack }) => {
+        const RecordPage = ({ transactions, onBack, onOpenSearch }) => {
             const [year, setYear] = useState(new Date().getFullYear());
             const [month, setMonth] = useState(new Date().getMonth() + 1);
             const [selectedDate, setSelectedDate] = useState(getToday());
             const [filter, setFilter] = useState('all');
-            const [showSearch, setShowSearch] = useState(false);
-            const [searchKw, setSearchKw] = useState('');
-
-            const days = useMemo(() => getCalendarDays(year, month), [year, month]);
             
-            const dailyTx = useMemo(() => {
-                let tx = transactions.filter(t => t.date === selectedDate);
-                if(filter !== 'all') tx = tx.filter(t => t.type === filter);
-                return tx;
-            }, [transactions, selectedDate, filter]);
-
+            const days = useMemo(() => getCalendarDays(year, month), [year, month]);
+            const dailyTx = transactions.filter(t => t.date === selectedDate && (filter==='all' ? true : t.type===filter));
             const hasTx = (d) => transactions.some(t => t.date === d);
-            const changeMonth = (delta) => { let m = month + delta; let y = year; if(m > 12) { m = 1; y++; } if(m < 1) { m = 12; y--; } setMonth(m); setYear(y); };
-
-            // Search Logic
-            const searchResults = useMemo(() => {
-                if(!searchKw) return [];
-                return transactions.filter(t => t.category.includes(searchKw) || (t.note && t.note.includes(searchKw)) || t.amount.toString().includes(searchKw));
-            }, [transactions, searchKw]);
+            const changeMonth = (d) => { let m=month+d; let y=year; if(m>12){m=1;y++} if(m<1){m=12;y--} setMonth(m); setYear(y); };
 
             return (
-                <PageContainer title="紀錄 Record" onBack={onBack} extraIcon="fa-magnifying-glass" onExtraClick={()=>setShowSearch(true)} noScroll={true}>
-                    {/* Calendar Header */}
+                <PageContainer title="紀錄 Record" onBack={onBack} noScroll={true} extraIcon="fa-magnifying-glass" onExtraClick={onOpenSearch}>
                     <div className="flex-none bg-base-50 px-4 py-4 border-b border-base-200 z-10 shadow-sm">
                         <div className="flex justify-between items-center mb-4 px-2">
                             <button onClick={()=>changeMonth(-1)} className="w-8 h-8 flex items-center justify-center text-base-400 hover:text-base-800 bg-white rounded-full shadow-sm"><i className="fa-solid fa-chevron-left"></i></button>
@@ -315,51 +416,34 @@
                             {days.map((d, i) => {
                                 if(!d) return <div key={i}></div>;
                                 const isSel = d.dateStr === selectedDate; const active = hasTx(d.dateStr);
-                                return <div key={i} onClick={() => setSelectedDate(d.dateStr)} className={`aspect-square rounded-lg flex flex-col items-center justify-center text-xs font-bold transition-all cursor-pointer ${isSel ? 'bg-base-800 text-white shadow-lg' : 'bg-transparent text-base-600 hover:bg-base-200'}`}>{d.day}{active && !isSel && <div className="w-1 h-1 rounded-full bg-rose-400 mt-0.5"></div>}</div>
+                                return (
+                                    <div key={i} onClick={() => setSelectedDate(d.dateStr)} 
+                                        className={`aspect-square rounded-lg flex flex-col items-center justify-center text-xs font-bold transition-all cursor-pointer ${isSel ? 'bg-base-800 text-white shadow-lg' : 'bg-transparent text-base-600 hover:bg-base-200'}`}>
+                                        {d.day}
+                                        {active && !isSel && <div className="w-1 h-1 rounded-full bg-rose-400 mt-0.5"></div>}
+                                    </div>
+                                )
                             })}
                         </div>
                     </div>
-
-                    {/* Scrollable List */}
                     <div className="flex-1 overflow-y-auto no-scrollbar p-4 bg-white/50">
-                        {/* Split Filter */}
-                        <div className="flex bg-white p-1 rounded-xl shadow-sm mb-4 border border-base-200 sticky top-0 z-20">
-                            <button onClick={()=>setFilter('all')} className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all ${filter==='all'?'bg-base-800 text-white':'text-base-400'}`}>全部</button>
-                            <button onClick={()=>setFilter('income')} className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all ${filter==='income'?'bg-emerald-500 text-white':'text-base-400'}`}>收入</button>
-                            <button onClick={()=>setFilter('expense')} className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-all ${filter==='expense'?'bg-rose-500 text-white':'text-base-400'}`}>支出</button>
-                        </div>
-
-                        <div className="text-xs font-bold text-base-400 mb-3 px-1">{selectedDate} 流水帳</div>
-                        {dailyTx.length === 0 ? <div className="text-center text-xs text-base-300 py-8">無紀錄</div> : dailyTx.map(t => <TxItem key={t.id} tx={t} />)}
-                        <div className="h-10"></div>
-                    </div>
-
-                    {/* v3.3 Search Overlay */}
-                    {showSearch && (
-                        <div className="absolute inset-0 bg-base-50 z-50 flex flex-col animate-fade-in">
-                            <div className="p-4 bg-white border-b border-base-200 flex gap-3 safe-top">
-                                <div className="flex-1 bg-base-100 rounded-xl flex items-center px-3">
-                                    <i className="fa-solid fa-magnifying-glass text-base-400 text-sm"></i>
-                                    <input autoFocus value={searchKw} onChange={e=>setSearchKw(e.target.value)} placeholder="搜尋備註、分類、金額..." className="bg-transparent w-full p-3 outline-none text-sm text-base-800" />
-                                </div>
-                                <button onClick={()=>{setShowSearch(false); setSearchKw('')}} className="text-base-500 font-bold text-sm">取消</button>
-                            </div>
-                            <div className="flex-1 overflow-y-auto p-4">
-                                {searchKw && searchResults.length===0 && <div className="text-center text-xs text-base-300 mt-10">找不到相關紀錄</div>}
-                                {searchResults.map(t => (
-                                    <div key={t.id} className="mb-2">
-                                        <div className="text-[10px] text-base-300 mb-1 ml-1">{t.date}</div>
-                                        <TxItem tx={t} />
-                                    </div>
+                        <div className="sticky top-0 bg-white/50 backdrop-blur py-2 z-10 flex justify-between items-center mb-2">
+                            <span className="text-xs font-bold text-base-400">{selectedDate}</span>
+                            <div className="flex gap-2">
+                                {['all','income','expense'].map(f => (
+                                    <button key={f} onClick={()=>setFilter(f)} className={`px-2 py-0.5 rounded text-[10px] font-bold ${filter===f ? 'bg-base-800 text-white' : 'bg-base-200 text-base-400'}`}>
+                                        {f==='all'?'全':f==='income'?'收':'支'}
+                                    </button>
                                 ))}
                             </div>
                         </div>
-                    )}
+                        {dailyTx.length === 0 ? <div className="text-center text-xs text-base-300 py-8">本日無紀錄</div> : dailyTx.map(t => <TxItem key={t.id} tx={t} />)}
+                        <div className="h-10"></div>
+                    </div>
                 </PageContainer>
             );
         };
 
-        // 6. Vault Page
         const VaultPage = ({ transactions, onBack }) => {
             const [visible, setVisible] = useState(false);
             const net = useMemo(() => transactions.reduce((a, b) => b.type === 'income' ? a + b.amount : a - b.amount, 0), [transactions]);
@@ -375,186 +459,97 @@
             );
         };
 
-        // 7. Settings Page (v3.3 Core: Backup & Restore)
-        const SettingsPage = ({ onBack, transactions, notes, onRestore, onReset }) => {
-            const downloadBackup = () => {
-                const data = JSON.stringify({ transactions, notes, version: '3.3' });
-                const blob = new Blob([data], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `CfsBackup_${getToday()}.json`;
-                a.click();
-            };
-
-            const triggerRestore = () => document.getElementById('restoreInput').click();
-            const handleRestoreFile = (e) => {
-                const file = e.target.files[0];
-                if(!file) return;
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try {
-                        const data = JSON.parse(e.target.result);
-                        if(data.transactions && data.notes) {
-                            if(confirm(`確認還原 ${data.transactions.length} 筆帳務與 ${data.notes.length} 則隨記？\n現有資料將被覆蓋。`)) {
-                                onRestore(data);
-                                alert('還原成功');
-                            }
-                        } else alert('檔案格式錯誤');
-                    } catch(err) { alert('檔案讀取失敗'); }
-                };
-                reader.readAsText(file);
-            };
-
-            return (
-                <PageContainer title="設定 Settings" onBack={onBack}>
-                    <div className="p-6 space-y-6">
-                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-base-100">
-                            <h3 className="font-bold text-base-800 mb-4">資料保全</h3>
-                            <button onClick={downloadBackup} className="w-full bg-base-800 text-white py-3 rounded-xl font-bold mb-3 active:scale-95 transition-transform flex items-center justify-center gap-2">
-                                <i className="fa-solid fa-download"></i> 備份資料 (匯出)
-                            </button>
-                            <button onClick={triggerRestore} className="w-full bg-base-100 text-base-600 py-3 rounded-xl font-bold active:scale-95 transition-transform flex items-center justify-center gap-2">
-                                <i className="fa-solid fa-upload"></i> 還原資料 (匯入)
-                            </button>
-                            <input type="file" id="restoreInput" className="hidden" accept=".json" onChange={handleRestoreFile} />
-                            <p className="text-[10px] text-base-400 mt-2 text-center">建議每月備份一次，檔案可存於手機或雲端。</p>
-                        </div>
-
-                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-base-100">
-                            <h3 className="font-bold text-base-800 mb-4">危險區域</h3>
-                            <button onClick={onReset} className="w-full border border-rose-200 text-rose-500 py-3 rounded-xl font-bold active:scale-95 transition-transform">
-                                清除所有資料
-                            </button>
-                        </div>
-                        
-                        <div className="text-center text-xs text-base-300 mt-8">CashFlow Sense v3.3<br/>Designed for Pain & Awareness</div>
-                    </div>
-                </PageContainer>
-            );
-        };
-
-        // --- Shared Item ---
-        const TxItem = ({ tx, onDelete }) => {
-            const m = METHODS[tx.method] || METHODS.cash; const isExp = tx.type === 'expense';
-            return (
-                <div className="flex justify-between items-center py-3 border-b border-base-200 last:border-0 animate-fade-in group">
-                    <div className="flex items-center gap-3">
-                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm ${isExp ? m.bg + ' ' + m.color : 'bg-emerald-50 text-emerald-600'}`}><i className={`fa-solid ${isExp ? m.icon : 'fa-arrow-down'}`}></i></div>
-                        <div><div className="text-sm font-bold text-base-800">{tx.category}</div>
-                        {tx.note && <div className="text-[10px] text-base-400 truncate max-w-[150px]">{tx.note}</div>}
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <div className={`text-base font-bold font-num ${isExp ? 'text-base-800' : 'text-emerald-600'}`}>{isExp ? '-' : '+'}{formatMoney(tx.amount)}</div>
-                        {onDelete && <button onClick={(e) => {e.stopPropagation(); if(confirm('刪除?')) onDelete(tx.id)}} className="text-base-200 hover:text-rose-500 px-1"><i className="fa-solid fa-xmark text-xs"></i></button>}
-                    </div>
-                </div>
-            );
-        };
-
-        // --- Add Modal (v3.3 Expanded Cats) ---
         const AddModal = ({ mode, onClose, onSave }) => {
-            const [amount, setAmount] = useState(''); const [method, setMethod] = useState(mode === 'income' ? 'cash' : ''); const [cat, setCat] = useState(''); const [note, setNote] = useState('');
-            const cats = mode === 'income' ? CATS_INCOME : CATS_EXPENSE;
+            const [amount, setAmount] = useState(''); const [method, setMethod] = useState(mode === 'income' ? 'cash' : ''); const [cat, setCat] = useState('');
+            const cats = mode === 'income' ? CATS_INC : CATS_EXP;
             const submit = () => {
                 if(!amount) return; if(mode==='expense' && !method) return;
-                onSave({ id: Date.now(), date: getToday(), amount: parseFloat(amount), type: mode, method: mode==='income'?'cash':method, category: cat||'其他', note });
+                onSave({ id: Date.now(), date: getToday(), amount: parseFloat(amount), type: mode, method: mode==='income'?'cash':method, category: cat||'其他' });
                 onClose();
             };
             return (
                 <div className="fixed inset-0 z-[100] flex flex-col justify-end">
                     <div className="absolute inset-0 bg-base-900/30 backdrop-blur-sm" onClick={onClose}></div>
-                    <div className="bg-white rounded-t-3xl p-6 w-full animate-slide-up relative z-10 safe-bottom shadow-2xl h-[90vh] flex flex-col">
-                        <div className="flex justify-between mb-4"><span className="text-lg font-bold text-base-800">{mode==='income'?'進帳':'支出'}</span><button onClick={onClose}><i className="fa-solid fa-xmark text-base-400 text-xl"></i></button></div>
-                        <div className="flex justify-center mb-6 relative"><span className="text-2xl text-base-300 absolute left-8 top-2">$</span><input autoFocus type="number" value={amount} onChange={e=>setAmount(e.target.value)} placeholder="0" className="text-5xl font-bold text-center w-full outline-none font-num text-base-800 bg-transparent placeholder-base-100"/></div>
-                        
-                        <div className="flex-1 overflow-y-auto no-scrollbar">
-                            {mode === 'expense' && <div className="mb-6"><div className="text-xs font-bold text-base-300 uppercase tracking-widest text-center mb-3">Payment</div><div className="flex justify-center gap-3">{['cash','mobile','card'].map(k => (<button key={k} onClick={() => setMethod(k)} className={`w-16 h-16 rounded-2xl flex flex-col items-center justify-center gap-1 border-2 transition-all ${method===k ? 'border-base-800 bg-base-50 text-base-800' : 'border-base-100 text-base-300'}`}><i className={`fa-solid ${METHODS[k].icon} text-lg`}></i><span className="text-[10px] font-bold">{METHODS[k].label}</span></button>))}</div></div>}
-                            <div className="mb-6"><div className="text-xs font-bold text-base-300 uppercase tracking-widest text-center mb-3">Category</div><div className="flex flex-wrap justify-center gap-2">{cats.map(c => (<button key={c} onClick={() => setCat(c)} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${cat===c ? 'bg-base-800 text-white' : 'bg-base-100 text-base-400'}`}>{c}</button>))}</div></div>
-                            <div className="mb-6 px-4"><input value={note} onChange={e=>setNote(e.target.value)} placeholder="備註 (選填)..." className="w-full bg-base-50 p-3 rounded-xl outline-none text-sm text-base-700"/></div>
+                    <div className="bg-white rounded-t-3xl w-full animate-slide-up relative z-10 safe-bottom shadow-2xl max-h-[85vh] flex flex-col">
+                        <div className="p-6 flex-none">
+                            <div className="flex justify-between mb-6"><span className="text-lg font-bold text-base-800">{mode==='income'?'進帳':'支出'}</span><button onClick={onClose}><i className="fa-solid fa-xmark text-base-400 text-xl"></i></button></div>
+                            <div className="flex justify-center mb-6 relative"><span className="text-2xl text-base-300 absolute left-8 top-2">$</span><input autoFocus type="number" value={amount} onChange={e=>setAmount(e.target.value)} placeholder="0" className="text-5xl font-bold text-center w-full outline-none font-num text-base-800 bg-transparent placeholder-base-100"/></div>
+                            {mode === 'expense' && <div className="mb-4"><div className="flex justify-center gap-3">{['cash','mobile','card'].map(k => (<button key={k} onClick={() => setMethod(k)} className={`w-14 h-14 rounded-2xl flex flex-col items-center justify-center gap-1 border-2 transition-all ${method===k ? 'border-base-800 bg-base-50 text-base-800' : 'border-base-100 text-base-300'}`}><i className={`fa-solid ${METHODS[k].icon} text-lg`}></i><span className="text-[10px] font-bold">{METHODS[k].label}</span></button>))}</div></div>}
                         </div>
                         
-                        <button onClick={submit} className={`w-full py-4 rounded-xl text-white font-bold text-lg active:scale-95 transition-transform mt-4 ${mode==='income'?'bg-emerald-500':'bg-base-800'}`}>確認</button>
+                        <div className="flex-1 overflow-y-auto no-scrollbar px-6 pb-4">
+                            <div className="grid grid-cols-4 gap-4">
+                                {cats.map(c => (
+                                    <button key={c.id} onClick={()=>setCat(c.id)} className={`aspect-square rounded-2xl flex flex-col items-center justify-center transition-all ${cat===c.id ? 'bg-base-800 text-white shadow-lg' : 'bg-base-50 text-base-400 hover:bg-base-100'}`}>
+                                        <i className={`fa-solid ${c.icon} text-xl mb-1`}></i>
+                                        <span className="text-[10px] font-bold">{c.id}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="p-6 pt-2 flex-none">
+                            <button onClick={submit} className={`w-full py-4 rounded-xl text-white font-bold text-lg active:scale-95 transition-transform ${mode==='income'?'bg-emerald-500':'bg-base-800'}`}>確認</button>
+                        </div>
                     </div>
                 </div>
             );
         };
 
-        // Murmur Modal
-        const MemoModal = ({ notes, onClose, onSave, onDelete }) => {
+        const MurmurModal = ({ notes, onClose, onSave, onDelete }) => {
             const [text, setText] = useState(''); const [listening, setListening] = useState(false); const recognitionRef = useRef(null); const listRef = useRef(null);
             useEffect(() => {
                 if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                    recognitionRef.current = new SpeechRecognition(); recognitionRef.current.continuous = false; recognitionRef.current.lang = 'zh-TW'; recognitionRef.current.interimResults = false;
-                    recognitionRef.current.onresult = (event) => { setText(prev => prev + event.results[0][0].transcript); setListening(false); };
-                    recognitionRef.current.onerror = () => setListening(false); recognitionRef.current.onend = () => setListening(false);
+                    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    recognitionRef.current = new SR(); recognitionRef.current.lang = 'zh-TW'; recognitionRef.current.continuous=false;
+                    recognitionRef.current.onresult = (e) => { setText(p => p + e.results[0][0].transcript); setListening(false); };
+                    recognitionRef.current.onend = () => setListening(false);
                 }
             }, []);
-            const toggleListen = () => { if(!recognitionRef.current) { alert('不支援語音'); return; } if(listening) { recognitionRef.current.stop(); setListening(false); } else { recognitionRef.current.start(); setListening(true); } };
-            const save = () => { if(text) { onSave(text); setText(''); if(listRef.current) listRef.current.scrollTop = 0; } };
+            const toggleListen = () => { if(listening) {recognitionRef.current.stop(); setListening(false)} else {recognitionRef.current.start(); setListening(true)} };
+            const save = () => { if(text) { onSave(text); setText(''); if(listRef.current) listRef.current.scrollTop=0; } };
             return (
                 <div className="fixed inset-0 z-[100] flex flex-col justify-end">
                     <div className="absolute inset-0 bg-base-900/30 backdrop-blur-sm" onClick={onClose}></div>
                     <div className="bg-white rounded-t-3xl p-6 w-full animate-slide-up relative z-10 safe-bottom h-[85vh] flex flex-col shadow-2xl">
                         <div className="flex justify-between items-center mb-4"><h3 className="font-bold text-base-800">隨記 Memo</h3><button onClick={onClose}><i className="fa-solid fa-xmark text-base-400"></i></button></div>
-                        <div className="flex-none mb-4"><textarea value={text} onChange={e=>setText(e.target.value)} placeholder="寫下當下的想法..." className="w-full h-24 p-4 bg-base-50 rounded-xl outline-none resize-none mb-3 text-base-800 border border-base-200 shadow-inner"></textarea><div className="flex gap-3"><button onClick={toggleListen} className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${listening ? 'bg-rose-500 text-white animate-pulse' : 'bg-base-100 text-base-500'}`}><i className={`fa-solid ${listening ? 'fa-stop' : 'fa-microphone'}`}></i></button><button onClick={save} className="flex-1 bg-base-800 text-white rounded-xl font-bold shadow-lg active:scale-95 transition-transform">紀錄</button></div></div>
-                        <div className="flex-1 overflow-y-auto no-scrollbar border-t border-base-100 pt-4" ref={listRef}><div className="text-xs font-bold text-base-400 mb-3 px-1">歷史紀錄</div>{notes.length === 0 ? <div className="text-center text-xs text-base-300 py-10">尚無紀錄</div> : <div className="space-y-3">{notes.map(n => (<div key={n.id} className="bg-base-50 p-4 rounded-xl text-sm text-base-700 border border-base-100 shadow-sm flex justify-between group animate-fade-in"><div><div className="text-[10px] text-base-400 mb-1 font-bold">{n.date}</div><div className="leading-relaxed">{n.text}</div></div><button onClick={()=>onDelete(n.id)} className="text-base-300 hover:text-rose-500 self-start px-2"><i className="fa-solid fa-trash text-xs"></i></button></div>))}</div>}</div>
+                        <div className="flex-none mb-4"><textarea value={text} onChange={e=>setText(e.target.value)} className="w-full h-24 p-4 bg-base-50 rounded-xl outline-none resize-none mb-3 text-base-800 border border-base-200 shadow-inner" placeholder="隨手記下..."></textarea><div className="flex gap-3"><button onClick={toggleListen} className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${listening ? 'bg-rose-500 text-white animate-pulse' : 'bg-base-100 text-base-500'}`}><i className={`fa-solid ${listening ? 'fa-stop' : 'fa-microphone'}`}></i></button><button onClick={save} className="flex-1 bg-base-800 text-white rounded-xl font-bold shadow-lg">紀錄</button></div></div>
+                        <div className="flex-1 overflow-y-auto no-scrollbar border-t border-base-100 pt-4" ref={listRef}>{notes.length===0?<div className="text-center text-xs text-base-300 py-10">尚無紀錄</div>:<div className="space-y-3">{notes.map(n=>(<div key={n.id} className="bg-base-50 p-4 rounded-xl text-sm text-base-700 border border-base-100 shadow-sm flex justify-between group"><div><div className="text-[10px] text-base-400 mb-1 font-bold">{n.date}</div><div className="leading-relaxed">{n.text}</div></div><button onClick={()=>onDelete(n.id)} className="text-base-300 hover:text-rose-500 self-start px-2"><i className="fa-solid fa-trash text-xs"></i></button></div>))}</div>}</div>
                     </div>
                 </div>
             );
         };
 
-        // --- App Root ---
         const App = () => {
-            const [page, setPage] = useState('home'); 
-            const [txs, setTxs] = useState([]);
-            const [notes, setNotes] = useState([]);
-            const [addMode, setAddMode] = useState(null);
-            const [memoOpen, setMemoOpen] = useState(false);
-
-            useEffect(() => { 
-                const d = localStorage.getItem(DB_KEY); if(d) setTxs(JSON.parse(d)); 
-                const n = localStorage.getItem(NOTE_KEY); if(n) setNotes(JSON.parse(n));
-            }, []);
-            
+            const [page, setPage] = useState('home'); const [txs, setTxs] = useState([]); const [notes, setNotes] = useState([]);
+            const [addMode, setAddMode] = useState(null); const [murmurOpen, setMurmurOpen] = useState(false); const [searchOpen, setSearchOpen] = useState(false); const [settingsOpen, setSettingsOpen] = useState(false);
+            useEffect(() => { const d = localStorage.getItem(DB_KEY); if(d) setTxs(JSON.parse(d)); const n = localStorage.getItem(NOTE_KEY); if(n) setNotes(JSON.parse(n)); }, []);
             const saveTx = (t) => { const n = [t,...txs]; setTxs(n); localStorage.setItem(DB_KEY, JSON.stringify(n)); };
             const delTx = (id) => { const n = txs.filter(t=>t.id!==id); setTxs(n); localStorage.setItem(DB_KEY, JSON.stringify(n)); };
             const saveNote = (txt) => { const n = [{id:Date.now(), text:txt, date:getToday()}, ...notes]; setNotes(n); localStorage.setItem(NOTE_KEY, JSON.stringify(n)); };
-            const delNote = (id) => { const n = notes.filter(note=>note.id!==id); setNotes(n); localStorage.setItem(NOTE_KEY, JSON.stringify(n)); };
-            
-            const restoreData = (data) => {
-                setTxs(data.transactions || []); localStorage.setItem(DB_KEY, JSON.stringify(data.transactions || []));
-                setNotes(data.notes || []); localStorage.setItem(NOTE_KEY, JSON.stringify(data.notes || []));
-                setPage('home');
-            };
-            const resetData = () => {
-                if(confirm('警告：確定要清除所有資料嗎？此動作無法復原。')) {
-                    setTxs([]); setNotes([]); localStorage.removeItem(DB_KEY); localStorage.removeItem(NOTE_KEY);
-                    setPage('home'); alert('資料已清除');
-                }
-            };
+            const delNote = (id) => { const n = notes.filter(n=>n.id!==id); setNotes(n); localStorage.setItem(NOTE_KEY, JSON.stringify(n)); };
+            const restoreData = (data) => { if(data.txs) {setTxs(data.txs); localStorage.setItem(DB_KEY, JSON.stringify(data.txs));} if(data.notes) {setNotes(data.notes); localStorage.setItem(NOTE_KEY, JSON.stringify(data.notes));} };
+            const resetAll = () => { if(confirm('警告：這將清除所有資料且無法復原！')) { localStorage.clear(); setTxs([]); setNotes([]); alert('資料已重置'); setSettingsOpen(false); } };
+            const getAllData = () => ({ txs, notes });
 
             return (
                 <div className="h-full w-full bg-base-50 text-base-800">
-                    {page === 'home' && <HomeLobby onNavigate={setPage} onOpenMemo={()=>setMemoOpen(true)} noteCount={notes.length} onOpenSettings={()=>setPage('settings')} />}
+                    {page === 'home' && <HomeLobby onNavigate={setPage} onOpenMurmur={()=>setMurmurOpen(true)} onOpenSettings={()=>setSettingsOpen(true)} noteCount={notes.length} />}
                     {page === 'journal' && <JournalPage transactions={txs} onBack={()=>setPage('home')} onOpenAdd={setAddMode} onDelete={delTx} />}
                     {page === 'insight' && <InsightPage transactions={txs} onBack={()=>setPage('home')} />}
-                    {page === 'calendar' && <RecordPage transactions={txs} onBack={()=>setPage('home')} />}
+                    {page === 'calendar' && <RecordPage transactions={txs} onBack={()=>setPage('home')} onOpenSearch={()=>setSearchOpen(true)} />}
                     {page === 'vault' && <VaultPage transactions={txs} onBack={()=>setPage('home')} />}
-                    {page === 'settings' && <SettingsPage onBack={()=>setPage('home')} transactions={txs} notes={notes} onRestore={restoreData} onReset={resetData} />}
                     
                     {addMode && <AddModal mode={addMode} onClose={()=>setAddMode(null)} onSave={saveTx} />}
-                    {memoOpen && <MemoModal notes={notes} onClose={()=>setMemoOpen(false)} onSave={saveNote} onDelete={delNote} />}
+                    {murmurOpen && <MurmurModal notes={notes} onClose={()=>setMurmurOpen(false)} onSave={saveNote} onDelete={delNote} />}
+                    {searchOpen && <SearchModal transactions={txs} onClose={()=>setSearchOpen(false)} />}
+                    {settingsOpen && <SettingsModal onClose={()=>setSettingsOpen(false)} getAllData={getAllData} restoreData={restoreData} onReset={resetAll} />}
                 </div>
             );
         };
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
-
-        if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./service-worker.js'); }); }
+        if ('serviceWorker' in navigator) window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js'));
     </script>
 </body>
 </html>
