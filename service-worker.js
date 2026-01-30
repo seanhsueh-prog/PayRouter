@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cfs-cache-v3.4'; // 升級 v3.4 (De-Blacking)
+const CACHE_NAME = 'cfs-cache-v3.5'; // 升級 v3.5 (Powder Blue Restoration)
 
 const ASSETS_TO_CACHE = [
   './index.html',         // 唯一入口
@@ -28,7 +28,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => Promise.all(
       keys.map((key) => {
-        // 只要不是 v3.4 的快取，全部刪除
+        // 只要不是 v3.5 的快取，全部刪除
         if (key !== CACHE_NAME) {
           return caches.delete(key);
         }
